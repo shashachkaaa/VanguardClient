@@ -27,7 +27,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-private val LightColor = lightColorScheme(
+internal val LightColor = lightColorScheme(
     primary = Color(0xFF4F46E5), // Indigo - акцент интерфейса
     onPrimary = Color(0xFFFFFFFF), // White
     primaryContainer = Color(0xFFE6E4FF), // Pale Indigo
@@ -64,7 +64,7 @@ private val LightColor = lightColorScheme(
     surfaceContainerHighest = Color(0xFFDFDDED), // Light Indigo Gray
 )
 
-private val DarkColor = darkColorScheme(
+internal val DarkColor = darkColorScheme(
     primary = Color(0xFFA5A2FF), // Light Indigo - акцент интерфейса
     onPrimary = Color(0xFF1E1B54), // Deep Indigo
     primaryContainer = Color(0xFF322E7A), // Indigo
@@ -139,6 +139,14 @@ object ThemeManager {
     /** Брать ли палитру из обоев системы (Android 12+). */
     val dynamicColor: StateFlow<Boolean> = _dynamicColor.asStateFlow()
 
+    private val _accentColor = MutableStateFlow(
+        MmkvManager.decodeSettingsString(AppConfig.PREF_ACCENT_COLOR, AccentPalette.DEFAULT_ID)
+            ?: AccentPalette.DEFAULT_ID
+    )
+
+    /** Выбранный акцент из [AccentPalette]. */
+    val accentColor: StateFlow<String> = _accentColor.asStateFlow()
+
     fun setThemeMode(mode: String) {
         MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, mode)
         _themeMode.value = mode
@@ -149,10 +157,18 @@ object ThemeManager {
         _dynamicColor.value = enabled
     }
 
+    fun setAccentColor(id: String) {
+        MmkvManager.encodeSettings(AppConfig.PREF_ACCENT_COLOR, id)
+        _accentColor.value = id
+    }
+
     fun refresh() {
         _themeMode.value =
             MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
         _dynamicColor.value = MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, false)
+        _accentColor.value =
+            MmkvManager.decodeSettingsString(AppConfig.PREF_ACCENT_COLOR, AccentPalette.DEFAULT_ID)
+                ?: AccentPalette.DEFAULT_ID
     }
 }
 
@@ -177,6 +193,9 @@ fun AppTheme(
     // Material You: палитра из обоев, но чёрный фон тёмной темы сохраняем -
     // ради него AMOLED-экраны и берут это приложение
     val dynamicColor by ThemeManager.dynamicColor.collectAsState()
+    // Акцент из настроек: цвета из обоев главнее, там палитру задаёт система
+    val accentId by ThemeManager.accentColor.collectAsState()
+    val accent = AccentPalette.find(accentId)
     val context = LocalContext.current
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme ->
@@ -191,8 +210,8 @@ fun AppTheme(
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             dynamicLightColorScheme(context)
 
-        darkTheme -> DarkColor
-        else -> LightColor
+        darkTheme -> DarkColor.withAccent(accent, dark = true)
+        else -> LightColor.withAccent(accent, dark = false)
     }
     val snackbarController = rememberAppSnackbarController()
 

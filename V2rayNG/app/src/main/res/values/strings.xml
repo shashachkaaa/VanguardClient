@@ -196,6 +196,18 @@
     <string name="main_session_traffic">Session: %1$s down · %2$s up</string>
     <string name="title_pref_dynamic_color">Wallpaper colours</string>
     <string name="summary_pref_dynamic_color">Take the accent from the system wallpaper. The dark theme keeps its black background</string>
+    <string name="title_pref_accent_color">Accent colour</string>
+    <string name="summary_pref_accent_color_dynamic">Set by the wallpaper colours</string>
+    <string name="accent_indigo">Indigo</string>
+    <string name="accent_blue">Blue</string>
+    <string name="accent_cyan">Cyan</string>
+    <string name="accent_teal">Teal</string>
+    <string name="accent_green">Green</string>
+    <string name="accent_amber">Amber</string>
+    <string name="accent_orange">Orange</string>
+    <string name="accent_red">Red</string>
+    <string name="accent_pink">Pink</string>
+    <string name="accent_purple">Purple</string>
     <string name="main_test_needs_connection">Connect to a server first</string>
     <!-- Preferences -->
     <string name="title_info_commit">Build commit</string>

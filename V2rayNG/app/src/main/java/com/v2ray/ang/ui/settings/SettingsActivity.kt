@@ -65,6 +65,7 @@ import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
+import com.v2ray.ang.ui.compose.AccentColorSetting
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.PreferenceGroupHeader
@@ -346,8 +347,9 @@ private fun UiSettings(modifier: Modifier) {
     SettingsColumn(modifier) {
         // Динамические цвета есть только с Android 12 - на старых прятать пункт честнее,
         // чем показывать переключатель, который ничего не делает
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            val dynamicColor by ThemeManager.dynamicColor.collectAsStateWithLifecycle()
+        val dynamicColor by ThemeManager.dynamicColor.collectAsStateWithLifecycle()
+        val dynamicAvailable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+        if (dynamicAvailable) {
             SettingsSwitchItem(
                 title = stringResource(R.string.title_pref_dynamic_color),
                 summary = stringResource(R.string.summary_pref_dynamic_color),
@@ -355,6 +357,7 @@ private fun UiSettings(modifier: Modifier) {
                 onCheckedChange = { ThemeManager.setDynamicColor(it) }
             )
         }
+        AccentColorSetting(enabled = !(dynamicAvailable && dynamicColor))
         SettingsSwitchItem(
             title = stringResource(R.string.title_pref_speed_enabled),
             summary = stringResource(R.string.summary_pref_speed_enabled),

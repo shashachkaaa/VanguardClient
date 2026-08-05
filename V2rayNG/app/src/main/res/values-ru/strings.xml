@@ -195,6 +195,18 @@
     <string name="main_session_traffic">За сеанс: %1$s ↓ · %2$s ↑</string>
     <string name="title_pref_dynamic_color">Цвета из обоев</string>
     <string name="summary_pref_dynamic_color">Брать акцент из обоев системы. Тёмная тема остаётся с чёрным фоном</string>
+    <string name="title_pref_accent_color">Акцентный цвет</string>
+    <string name="summary_pref_accent_color_dynamic">Задаётся цветами из обоев</string>
+    <string name="accent_indigo">Индиго</string>
+    <string name="accent_blue">Синий</string>
+    <string name="accent_cyan">Голубой</string>
+    <string name="accent_teal">Бирюзовый</string>
+    <string name="accent_green">Зелёный</string>
+    <string name="accent_amber">Янтарный</string>
+    <string name="accent_orange">Оранжевый</string>
+    <string name="accent_red">Красный</string>
+    <string name="accent_pink">Розовый</string>
+    <string name="accent_purple">Фиолетовый</string>
     <string name="main_test_needs_connection">Сначала подключитесь к серверу</string>
     <!-- Preferences -->
     <string name="title_info_commit">Коммит сборки</string>

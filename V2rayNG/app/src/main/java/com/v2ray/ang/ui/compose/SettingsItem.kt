@@ -349,14 +349,15 @@ fun SettingsMenuItem(
     title: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    subtitle: String? = null
+    subtitle: String? = null,
+    enabled: Boolean = true
 ) {
     SettingsItemRow(
         icon = icon,
         title = title,
         description = subtitle,
-        enabled = true,
-        onClick = onClick,
+        enabled = enabled,
+        onClick = if (enabled) onClick else null,
         modifier = modifier
     )
 }
