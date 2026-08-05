@@ -518,6 +518,12 @@
     <string name="update_new_version_found">Найдена новая версия: %s</string>
     <string name="update_now">Обновить</string>
     <string name="update_check_pre_release">Искать предварительный выпуск</string>
+    <string name="update_channel">Обновления приложения</string>
+    <string name="update_available_title">Доступна версия %1$s</string>
+    <string name="update_available_text">Нажмите, чтобы скачать новую сборку</string>
+    <string name="update_later">Позже</string>
+    <string name="update_auto_check">Проверять автоматически</string>
+    <string name="update_auto_check_summary">Раз в сутки искать новую версию и сообщать о ней уведомлением</string>
     <string name="update_checking_for_update">Проверка обновления…</string>
 
     <string name="title_policy_group_type">Тип политики группы</string>

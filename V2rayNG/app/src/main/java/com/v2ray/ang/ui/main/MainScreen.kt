@@ -65,6 +65,7 @@ import com.v2ray.ang.handler.TrafficSpeed
 import com.v2ray.ang.handler.TrafficSpeedState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalUriHandler
 import com.v2ray.ang.ui.compose.GlassSurface
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ResumePauseEffect
@@ -146,6 +147,7 @@ fun MainScreen(
     val timeString = "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 
     val haptics = LocalHapticFeedback.current
+    val uriHandler = LocalUriHandler.current
 
     // Отклик на смену состояния: подключились или отвалились - это чувствуется рукой
     var lastRunning by remember { mutableStateOf(uiState.isRunning) }
@@ -195,6 +197,8 @@ fun MainScreen(
     // Избранное собирается из всех групп, поэтому идёт отдельным разделом на самом верху
     val pinnedServers by mainViewModel.pinnedServers.collectAsStateWithLifecycle()
     val pinnedGuids by mainViewModel.pinnedGuids.collectAsStateWithLifecycle()
+
+    val availableUpdate by mainViewModel.availableUpdate.collectAsStateWithLifecycle()
 
     // Поиск: строка появляется по чипу и фильтрует все списки разом
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -276,6 +280,15 @@ fun MainScreen(
                         }
                     )
                 }
+
+                UpdateBanner(
+                    version = availableUpdate?.latestVersion,
+                    onUpdate = {
+                        availableUpdate?.downloadUrl?.let { uriHandler.openUri(it) }
+                        mainViewModel.dismissUpdate()
+                    },
+                    onDismiss = { mainViewModel.dismissUpdate() }
+                )
 
                 AnimatedVisibility(
                     visible = searchVisible,
@@ -573,6 +586,69 @@ private fun TopProgressBanner(
                             modifier = Modifier.size(12.dp)
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Плашка о новой версии: появляется, когда проверка нашла свежий релиз.
+ * «Позже» прячет её до следующей версии, чтобы не мозолила глаза каждый запуск.
+ */
+@Composable
+private fun UpdateBanner(
+    version: String?,
+    onUpdate: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = version != null,
+        enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+        exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+    ) {
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.update_available_title, version.orEmpty()),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.update_available_text),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = stringResource(R.string.update_later),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                TextButton(onClick = onUpdate) {
+                    Text(
+                        text = stringResource(R.string.update_now),
+                        color = MaterialTheme.colorScheme.primary,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

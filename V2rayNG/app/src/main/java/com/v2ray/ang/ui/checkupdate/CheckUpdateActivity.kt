@@ -53,6 +53,7 @@ fun CheckUpdateScreen(
 
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val checkPreRelease by viewModel.checkPreRelease.collectAsStateWithLifecycle()
+    val autoCheck by viewModel.autoCheck.collectAsStateWithLifecycle()
     val showUpdateDialog by viewModel.showUpdateDialog.collectAsStateWithLifecycle()
     val updateResult by viewModel.updateResult.collectAsStateWithLifecycle()
 
@@ -78,6 +79,13 @@ fun CheckUpdateScreen(
                 .padding(innerPadding)
                 .verticalScroll(rememberScrollState())
         ) {
+            SettingsSwitchItem(
+                icon = painterResource(R.drawable.ic_check_update_24dp),
+                title = stringResource(R.string.update_auto_check),
+                summary = stringResource(R.string.update_auto_check_summary),
+                checked = autoCheck,
+                onCheckedChange = { viewModel.toggleAutoCheck(it) }
+            )
             SettingsSwitchItem(
                 icon = painterResource(R.drawable.ic_source_code_24dp),
                 title = stringResource(R.string.update_check_pre_release),

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.GroupMapItem
+import com.v2ray.ang.dto.CheckUpdateResult
 import com.v2ray.ang.dto.LocateTarget
 import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.ServersCache
@@ -15,6 +16,7 @@ import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.PingManager
+import com.v2ray.ang.handler.UpdateCheckerManager
 import com.v2ray.ang.handler.TrafficSpeedState
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.base.BaseViewModel
@@ -73,6 +75,11 @@ class MainViewModel(
 
     /** Те же закреплённые, но набором - строке сервера нужно знать про звёздочку. */
     val pinnedGuids: StateFlow<Set<String>> = _pinnedGuids.asStateFlow()
+
+    private val _availableUpdate = MutableStateFlow<CheckUpdateResult?>(null)
+
+    /** Найденное обновление: из него на главном экране рисуется плашка. */
+    val availableUpdate: StateFlow<CheckUpdateResult?> = _availableUpdate.asStateFlow()
 
     val isImporting = MutableStateFlow(false)
     val importError = MutableStateFlow<String?>(null)
@@ -427,12 +434,34 @@ class MainViewModel(
                 delay(32L)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+                checkForUpdateQuietly()
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (error: Exception) {
                 LogUtil.e(AppConfig.TAG, "Main background initialization failed", error)
             }
         }
+    }
+
+    /**
+     * Тихая проверка обновления при запуске. Плашку не показываем, если эту же
+     * версию уже закрыли рукой - напоминать о ней при каждом запуске незачем.
+     */
+    private suspend fun checkForUpdateQuietly() {
+        val update = UpdateCheckerManager.checkQuietly() ?: return
+        val version = update.latestVersion.orEmpty()
+        if (MmkvManager.decodeSettingsString(AppConfig.PREF_UPDATE_DISMISSED_VERSION) == version) {
+            return
+        }
+        _availableUpdate.value = update
+    }
+
+    /** «Позже»: прячем плашку до следующей версии. */
+    fun dismissUpdate() {
+        _availableUpdate.value?.latestVersion?.let {
+            MmkvManager.encodeSettings(AppConfig.PREF_UPDATE_DISMISSED_VERSION, it)
+        }
+        _availableUpdate.value = null
     }
 
     fun refreshUiSettings() {

@@ -527,6 +527,12 @@
     <string name="update_new_version_found">New version found: %s</string>
     <string name="update_now">Update now</string>
     <string name="update_check_pre_release">Check Pre-release</string>
+    <string name="update_channel">App updates</string>
+    <string name="update_available_title">Version %1$s is available</string>
+    <string name="update_available_text">Tap to download the new build</string>
+    <string name="update_later">Later</string>
+    <string name="update_auto_check">Check automatically</string>
+    <string name="update_auto_check_summary">Look for a new version once a day and notify when one appears</string>
     <string name="update_checking_for_update">Checking for update…</string>
 
     <string name="title_policy_group_type">Policy group type</string>

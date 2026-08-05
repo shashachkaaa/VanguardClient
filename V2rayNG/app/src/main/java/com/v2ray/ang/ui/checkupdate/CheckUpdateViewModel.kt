@@ -4,6 +4,7 @@ import android.app.Application
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.dto.CheckUpdateResult
+import com.v2ray.ang.handler.AppUpdateNotifier
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.UpdateCheckerManager
 import com.v2ray.ang.ui.base.BaseViewModel
@@ -19,6 +20,11 @@ class CheckUpdateViewModel(application: Application) : BaseViewModel(application
     )
     val checkPreRelease: StateFlow<Boolean> = _checkPreRelease.asStateFlow()
 
+    private val _autoCheck = MutableStateFlow(
+        MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_CHECK_UPDATE, true)
+    )
+    val autoCheck: StateFlow<Boolean> = _autoCheck.asStateFlow()
+
     private val _updateResult = MutableStateFlow<CheckUpdateResult?>(null)
     val updateResult: StateFlow<CheckUpdateResult?> = _updateResult.asStateFlow()
 
@@ -28,6 +34,17 @@ class CheckUpdateViewModel(application: Application) : BaseViewModel(application
     fun toggleCheckPreRelease(enabled: Boolean) {
         _checkPreRelease.value = enabled
         MmkvManager.encodeSettings(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, enabled)
+    }
+
+    /** Выключенная проверка снимает и суточную задачу: незачем будить приложение зря. */
+    fun toggleAutoCheck(enabled: Boolean) {
+        _autoCheck.value = enabled
+        MmkvManager.encodeSettings(AppConfig.PREF_AUTO_CHECK_UPDATE, enabled)
+        if (enabled) {
+            AppUpdateNotifier.schedule(getApplication())
+        } else {
+            AppUpdateNotifier.cancel(getApplication())
+        }
     }
 
     fun checkForUpdates() {

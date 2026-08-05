@@ -12,6 +12,7 @@ import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.concurrent.TimeUnit
 
 object UpdateCheckerManager {
     suspend fun checkForUpdate(includePreRelease: Boolean = false): CheckUpdateResult = withContext(Dispatchers.IO) {
@@ -72,6 +73,39 @@ object UpdateCheckerManager {
             )
         } else {
             CheckUpdateResult(hasUpdate = false)
+        }
+    }
+
+    /** Как часто ходить на GitHub при запуске приложения. */
+    private val CHECK_INTERVAL_MS = TimeUnit.HOURS.toMillis(6)
+
+    /**
+     * Тихая проверка для фона и запуска приложения: настройку пре-релизов читает
+     * сама, ошибки не показывает - сеть может быть недоступна, и это не повод
+     * тревожить человека.
+     *
+     * @param force Проверить, не глядя на время прошлой проверки.
+     * @return Результат, если обновление есть; иначе null.
+     */
+    suspend fun checkQuietly(force: Boolean = false): CheckUpdateResult? {
+        if (!MmkvManager.decodeSettingsBool(AppConfig.PREF_AUTO_CHECK_UPDATE, true)) {
+            return null
+        }
+
+        val lastCheck = MmkvManager.decodeSettingsLong(AppConfig.PREF_UPDATE_LAST_CHECK, 0L)
+        if (!force && System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
+            return null
+        }
+
+        return try {
+            val preRelease =
+                MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
+            val result = checkForUpdate(preRelease)
+            MmkvManager.encodeSettings(AppConfig.PREF_UPDATE_LAST_CHECK, System.currentTimeMillis())
+            result.takeIf { it.hasUpdate }
+        } catch (e: Exception) {
+            LogUtil.i(AppConfig.TAG, "Background update check failed: ${e.message}")
+            null
         }
     }
 

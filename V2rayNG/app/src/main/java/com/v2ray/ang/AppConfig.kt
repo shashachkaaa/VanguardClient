@@ -87,6 +87,18 @@ object AppConfig {
     const val PREF_ROOT_LAN_SHARING = "pref_root_lan_sharing"
     const val PREF_IS_BOOTED = "pref_is_booted"
     const val PREF_CHECK_UPDATE_PRE_RELEASE = "pref_check_update_pre_release"
+
+    /** Проверять ли обновления в фоне. */
+    const val PREF_AUTO_CHECK_UPDATE = "pref_auto_check_update"
+
+    /** Когда проверяли в последний раз: чаще, чем раз в несколько часов, незачем. */
+    const val PREF_UPDATE_LAST_CHECK = "pref_update_last_check"
+
+    /** Версия, о которой уже показывали уведомление: повторно не напоминаем. */
+    const val PREF_UPDATE_NOTIFIED_VERSION = "pref_update_notified_version"
+
+    /** Версия, для которой плашку на главном закрыли рукой. */
+    const val PREF_UPDATE_DISMISSED_VERSION = "pref_update_dismissed_version"
     const val PREF_GEO_FILES_SOURCES = "pref_geo_files_sources"
     const val PREF_USE_HEV_TUNNEL = "pref_use_hev_tunnel_v2"
     const val PREF_HEV_TUNNEL_LOGLEVEL = "pref_hev_tunnel_loglevel"

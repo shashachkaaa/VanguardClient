@@ -14,6 +14,7 @@ import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.handler.AngConfigManager
+import com.v2ray.ang.handler.AppUpdateNotifier
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.handler.SubscriptionUpdater
@@ -210,6 +211,9 @@ class MainRepository(
 
     override fun syncSubscriptions() {
         SubscriptionUpdater.sync(app)
+        // Суточная проверка обновлений живёт рядом с обновлением подписок:
+        // оба расписания ставятся при запуске и переживают перезагрузку
+        AppUpdateNotifier.schedule(app)
     }
 
     override fun initAssets() {
