@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -43,6 +44,7 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
+import com.v2ray.ang.ui.compose.FormSection
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
 import com.v2ray.ang.util.JsonUtil
@@ -102,7 +104,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         state: ServerUiState,
         showPort: Boolean = true
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FormSection(title = stringResource(R.string.server_section_basic)) {
             FormTextField(
                 stringResource(R.string.server_lab_remarks),
                 state.remarks,
@@ -129,7 +131,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         state: ServerUiState,
         options: FieldOptions
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FormSection(title = stringResource(R.string.server_section_transport)) {
             FormDropdownField(
                 stringResource(R.string.server_lab_network),
                 state.network,
@@ -237,7 +239,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
         buildProfileItem: () -> ProfileItem
     ) {
         val context = LocalContext.current
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FormSection(title = stringResource(R.string.server_section_security)) {
             FormDropdownField(
                 stringResource(R.string.server_lab_stream_security),
                 state.streamSecurity,
@@ -246,7 +248,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
             )
 
             if (state.streamSecurity.isBlank()) {
-                return@Column
+                return@FormSection
             }
 
             FormTextField(
@@ -320,7 +322,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                         }
                     },
                     enabled = !state.isFetchingCert,
-                    modifier = Modifier.padding(start = 16.dp)
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(stringResource(R.string.pinned_ca256_action_fetch))
                 }
@@ -466,7 +468,7 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     .imePadding()
                     .verticalScroll(scrollState)
                     .padding(bottom = 36.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
                 content = content
             )
         }

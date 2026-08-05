@@ -7,6 +7,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import com.v2ray.ang.R
 import com.v2ray.ang.enums.EConfigType
+import com.v2ray.ang.ui.compose.FormSection
 import com.v2ray.ang.ui.compose.FormTextField
 
 class ServerWireguardActivity : BaseServerActivity() {
@@ -36,43 +37,45 @@ class ServerWireguardActivity : BaseServerActivity() {
 
     @Composable
     private fun WireguardProtocolFields(state: ServerUiState) {
-        FormTextField(
-            stringResource(R.string.server_lab_secret_key),
-            state.secretKey,
-            { state.secretKey = it }
-        )
-        FormTextField(
-            stringResource(R.string.server_lab_public_key),
-            state.publicKey,
-            { state.publicKey = it }
-        )
-        FormTextField(
-            stringResource(R.string.server_lab_preshared_key),
-            state.preSharedKey,
-            { state.preSharedKey = it }
-        )
-        FormTextField(
-            stringResource(R.string.server_lab_reserved),
-            state.reserved,
-            { state.reserved = it }
-        )
-        FormTextField(
-            stringResource(R.string.server_lab_local_address),
-            state.localAddress,
-            { state.localAddress = it }
-        )
-        FormTextField(
-            stringResource(R.string.server_lab_local_mtu),
-            state.mtu,
-            { state.mtu = it },
-            keyboardType = KeyboardType.Number
-        )
+        FormSection(title = stringResource(R.string.server_section_protocol)) {
+            FormTextField(
+                stringResource(R.string.server_lab_secret_key),
+                state.secretKey,
+                { state.secretKey = it }
+            )
+            FormTextField(
+                stringResource(R.string.server_lab_public_key),
+                state.publicKey,
+                { state.publicKey = it }
+            )
+            FormTextField(
+                stringResource(R.string.server_lab_preshared_key),
+                state.preSharedKey,
+                { state.preSharedKey = it }
+            )
+            FormTextField(
+                stringResource(R.string.server_lab_reserved),
+                state.reserved,
+                { state.reserved = it }
+            )
+            FormTextField(
+                stringResource(R.string.server_lab_local_address),
+                state.localAddress,
+                { state.localAddress = it }
+            )
+            FormTextField(
+                stringResource(R.string.server_lab_local_mtu),
+                state.mtu,
+                { state.mtu = it },
+                keyboardType = KeyboardType.Number
+            )
 
-        FormTextField(
-            stringResource(R.string.server_lab_final_mask),
-            state.finalMask,
-            { state.finalMask = it }
-        )
+            FormTextField(
+                stringResource(R.string.server_lab_final_mask),
+                state.finalMask,
+                { state.finalMask = it }
+            )
+        }
     }
 }
 

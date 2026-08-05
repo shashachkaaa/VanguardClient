@@ -208,6 +208,13 @@
     <string name="main_group_remove_invalid">Remove dead servers</string>
     <string name="main_removed_count">Removed: %1$d</string>
     <string name="main_removed_nothing">Nothing to remove</string>
+    <string name="server_section_basic">Basics</string>
+    <string name="server_section_protocol">Protocol</string>
+    <string name="server_section_transport">Transport</string>
+    <string name="server_section_security">Security</string>
+    <string name="sub_section_basic">Subscription</string>
+    <string name="sub_section_update">Updating</string>
+    <string name="sub_section_request">Request</string>
     <string name="sub_alert_channel">Subscription alerts</string>
     <string name="sub_alert_traffic_low">Only %1$d%% of the traffic left</string>
     <string name="sub_alert_traffic_over">The traffic limit is used up</string>

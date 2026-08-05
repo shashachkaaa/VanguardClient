@@ -365,7 +365,7 @@ fun ServerScreen(
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
                 .imePadding(),
-            contentPadding = PaddingValues(bottom = 36.dp),
+            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 36.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             item { FormTextField(stringResource(R.string.server_lab_remarks), remarks, { remarks = it }) }

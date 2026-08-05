@@ -265,7 +265,7 @@ fun ServerGroupScreen(
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
                 .imePadding()
-                .padding(vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .verticalScroll(rememberScrollState())
         ) {
             FormTextField(stringResource(R.string.server_lab_remarks), remarks, { remarks = it })

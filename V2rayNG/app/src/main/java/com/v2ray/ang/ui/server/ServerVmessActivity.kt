@@ -10,6 +10,7 @@ import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.enums.EConfigType
 import com.v2ray.ang.extension.toast
 import com.v2ray.ang.ui.compose.FormDropdownField
+import com.v2ray.ang.ui.compose.FormSection
 import com.v2ray.ang.ui.compose.FormTextField
 
 class ServerVmessActivity : BaseServerActivity() {
@@ -58,16 +59,18 @@ class ServerVmessActivity : BaseServerActivity() {
         state: ServerUiState,
         methodOptions: List<String>
     ) {
-        FormTextField(
-            stringResource(R.string.server_lab_id),
-            state.password,
-            { state.password = it }
-        )
-        FormDropdownField(
-            stringResource(R.string.server_lab_security),
-            state.method,
-            methodOptions,
-            { state.method = it }
-        )
+        FormSection(title = stringResource(R.string.server_section_protocol)) {
+            FormTextField(
+                stringResource(R.string.server_lab_id),
+                state.password,
+                { state.password = it }
+            )
+            FormDropdownField(
+                stringResource(R.string.server_lab_security),
+                state.method,
+                methodOptions,
+                { state.method = it }
+            )
+        }
     }
 }

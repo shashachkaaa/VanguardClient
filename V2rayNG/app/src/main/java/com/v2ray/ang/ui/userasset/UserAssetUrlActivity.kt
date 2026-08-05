@@ -170,7 +170,7 @@ fun UserAssetUrlScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(vertical = 8.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
             FormTextField(
                 label = stringResource(R.string.sub_setting_remarks),

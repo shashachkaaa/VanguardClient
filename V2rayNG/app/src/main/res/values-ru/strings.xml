@@ -207,6 +207,13 @@
     <string name="main_group_remove_invalid">Удалить нерабочие</string>
     <string name="main_removed_count">Удалено: %1$d</string>
     <string name="main_removed_nothing">Нечего удалять</string>
+    <string name="server_section_basic">Основное</string>
+    <string name="server_section_protocol">Протокол</string>
+    <string name="server_section_transport">Транспорт</string>
+    <string name="server_section_security">Безопасность</string>
+    <string name="sub_section_basic">Подписка</string>
+    <string name="sub_section_update">Обновление</string>
+    <string name="sub_section_request">Запрос</string>
     <string name="sub_alert_channel">Предупреждения подписки</string>
     <string name="sub_alert_traffic_low">Осталось %1$d%% трафика</string>
     <string name="sub_alert_traffic_over">Лимит трафика исчерпан</string>
