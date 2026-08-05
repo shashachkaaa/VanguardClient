@@ -53,6 +53,11 @@ import kotlinx.coroutines.withContext
 
 class MainActivity : HelperBaseComponentActivity() {
 
+    companion object {
+        /** Просьба перечитать список: что-то добавили извне, например по ссылке ward://. */
+        const val EXTRA_REFRESH_GROUPS = "refresh_groups"
+    }
+
     private val mainViewModel: MainViewModel by viewModels {
         MainViewModel.Factory(application, MainRepository(application as AngApplication))
     }
@@ -98,6 +103,15 @@ class MainActivity : HelperBaseComponentActivity() {
         mainViewModel.onAction(MainAction.Initialize)
 
         checkAndRequestPermission(PermissionType.POST_NOTIFICATIONS) {}
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Экран уже был открыт, onCreate не вызовется - список надо перечитать вручную
+        if (intent.getBooleanExtra(EXTRA_REFRESH_GROUPS, false)) {
+            mainViewModel.onAction(MainAction.RefreshGroups)
+        }
     }
 
     @Composable
