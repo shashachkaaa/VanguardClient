@@ -2,7 +2,6 @@ package com.v2ray.ang.ui.server
 
 import android.os.Bundle
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -204,7 +203,6 @@ fun ServerCustomConfigScreen(
     val showDelete = editGuid.isNotEmpty() && !isRunning
 
     val verticalScroll = rememberScrollState()
-    val horizontalScroll = rememberScrollState()
     val density = LocalDensity.current
 
     var textLayoutResult by remember { mutableStateOf<TextLayoutResult?>(null) }
@@ -240,14 +238,10 @@ fun ServerCustomConfigScreen(
         }
     }
 
-    LaunchedEffect(textFieldState, verticalScroll, horizontalScroll) {
+    LaunchedEffect(textFieldState, verticalScroll) {
         snapshotFlow {
-            Triple(
-                textFieldState.selection,
-                verticalScroll.viewportSize,
-                horizontalScroll.viewportSize
-            )
-        }.collectLatest { (selection, _, _) ->
+            textFieldState.selection to verticalScroll.viewportSize
+        }.collectLatest { (selection, _) ->
             val layout = textLayoutResult ?: return@collectLatest
             val cursor = selection.start
             val textLen = layout.layoutInput.text.length
@@ -279,26 +273,6 @@ fun ServerCustomConfigScreen(
                 }
             }
 
-            val cursorX = layout.getHorizontalPosition(cursor, true)
-            val vw = horizontalScroll.viewportSize.toFloat()
-            if (vw > 0f) {
-                val scrollX = horizontalScroll.value.toFloat()
-                val pad = with(density) { EditorConstants.SCROLL_PADDING.toPx() }
-
-                val targetX = when {
-                    cursorX < scrollX + pad ->
-                        (cursorX - pad).toInt().coerceAtLeast(0)
-
-                    cursorX > scrollX + vw - pad ->
-                        (cursorX - vw + pad).toInt()
-                            .coerceAtMost(horizontalScroll.maxValue)
-
-                    else -> null
-                }
-                targetX?.let {
-                    horizontalScroll.animateScrollTo(it)
-                }
-            }
         }
     }
 
@@ -361,9 +335,16 @@ fun ServerCustomConfigScreen(
                                 .width(lineNumberWidth)
                                 .height(with(density) { totalTextHeight.toDp() })
                         ) {
-                            val lc = layoutForLineNumbers.lineCount
-                            for (i in 0 until lc) {
-                                val lineLabel = (i + 1).toString()
+                            // С переносом одна логическая строка занимает несколько
+                            // визуальных - номер ставим только на первую из них
+                            val source = layoutForLineNumbers.layoutInput.text.text
+                            var lineStart = 0
+                            source.split('\n').forEachIndexed { index, line ->
+                                val i = layoutForLineNumbers.getLineForOffset(
+                                    lineStart.coerceAtMost(layoutForLineNumbers.layoutInput.text.length)
+                                )
+                                lineStart += line.length + 1
+                                val lineLabel = (index + 1).toString()
                                 val measured = textMeasurer.measure(
                                     text = lineLabel,
                                     style = lineNumberStyle.copy(
@@ -371,7 +352,6 @@ fun ServerCustomConfigScreen(
                                         textAlign = TextAlign.End,
                                     ),
                                 )
-                                val lineTop = layoutForLineNumbers.getLineTop(i)
                                 val lineBaseline = layoutForLineNumbers.getLineBaseline(i)
                                 val measuredBaseline = measured.firstBaseline
                                 val yOffset = lineBaseline - measuredBaseline
@@ -411,9 +391,10 @@ fun ServerCustomConfigScreen(
                     ) {
                         BasicTextField(
                             state = textFieldState,
+                            // Длинные строки переносятся: конфиги содержат ключи и адреса,
+                            // за которыми раньше приходилось возить экран вправо
                             modifier = Modifier
                                 .weight(1f)
-                                .horizontalScroll(horizontalScroll)
                                 .padding(end = 24.dp)
                                 .padding(bottom = 36.dp),
                             textStyle = TextStyle(

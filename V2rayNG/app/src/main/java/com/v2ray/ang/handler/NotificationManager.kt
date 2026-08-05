@@ -44,7 +44,8 @@ object NotificationManager {
      * @param currentConfig The current profile configuration.
      */
     fun startSpeedNotification() {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) return
+        // Опрос идёт всегда: с него живёт скорость на главном экране.
+        // Настройка решает лишь, писать ли цифры в само уведомление
         if (speedNotificationJob != null || CoreServiceManager.isRunning() == false) return
 
         var lastZeroSpeed = false
@@ -288,7 +289,9 @@ object NotificationManager {
                 directUplink / sinceLastQueryInSeconds,
                 directDownlink / sinceLastQueryInSeconds
             )
-            updateNotification(text.toString(), proxyTotal, directTotal)
+            if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) == true) {
+                updateNotification(text.toString(), proxyTotal, directTotal)
+            }
         }
         lastQueryTime = queryTime
         return zeroSpeed

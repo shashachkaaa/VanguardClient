@@ -772,14 +772,12 @@ object CoreConfigManager {
     }
 
     /**
-     * Remove speed-test runtime sections when the feature is disabled.
+     * Раньше счётчики трафика вырезались из конфига, когда выключен показ скорости в
+     * уведомлении. Но на тех же счётчиках держится скорость и расход за сеанс на главном
+     * экране, поэтому статистика собирается всегда - переключатель отвечает только за
+     * уведомление. Стоит это пары счётчиков в ядре.
      */
-    private fun applySpeedDisabled(v2rayConfig: V2rayConfig) {
-        if (MmkvManager.decodeSettingsBool(AppConfig.PREF_SPEED_ENABLED) != true) {
-            v2rayConfig.stats = null
-            v2rayConfig.policy = null
-        }
-    }
+    private fun applySpeedDisabled(v2rayConfig: V2rayConfig) = Unit
 
     /*
     /**

@@ -43,15 +43,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
-import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.extension.toTrafficString
-import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.SessionTraffic
 import com.v2ray.ang.handler.TrafficSpeed
 import com.v2ray.ang.handler.TrafficSpeedState
@@ -143,12 +142,10 @@ fun MainScreen(
         }
     }
 
-    // Скорость считает служба для уведомления, здесь только показываем.
-    // Без включённой статистики ядро её не отдаёт, поэтому строку прячем
+    // Скорость считает служба - тем же замером, что кормит уведомление
     val speed by TrafficSpeedState.speed.collectAsStateWithLifecycle()
     val speedHistory by TrafficSpeedState.history.collectAsStateWithLifecycle()
     val session by TrafficSpeedState.session.collectAsStateWithLifecycle()
-    val speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, false)
 
     // Пузырёк капсулы. Из настроек он должен приехать с шестерёнки, а не оказаться
     // на «Главной» мгновенно, поэтому при возврате панель пересобирается уже с
@@ -210,7 +207,7 @@ fun MainScreen(
                 )
 
                 SpeedRow(
-                    visible = uiState.isRunning && speedEnabled,
+                    visible = uiState.isRunning,
                     speed = speed,
                     history = speedHistory,
                     session = session
@@ -779,6 +776,8 @@ private fun ActionChip(
                 onClick = onClick
             )
     ) {
+        // Без fillMaxWidth: чип без веса забирал бы всю строку целиком,
+        // и соседу с weight(1f) не оставалось ни пикселя - он просто исчезал
         Text(
             text = text,
             color = MaterialTheme.colorScheme.primary,
@@ -786,9 +785,8 @@ private fun ActionChip(
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,
             maxLines = 1,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 10.dp)
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
         )
     }
 }
