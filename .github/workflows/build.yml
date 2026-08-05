@@ -98,6 +98,9 @@ jobs:
       env:
         KEYSTORE_BASE64: ${{ secrets.WARD_KEYSTORE_BASE64 }}
         RELEASE_TAG: ${{ inputs.release_tag }}
+        # Через окружение, а не подстановкой в скрипт: в пароле могут быть кавычки
+        WARD_KEYSTORE_PASSWORD: ${{ secrets.WARD_KEYSTORE_PASSWORD }}
+        WARD_KEY_ALIAS: ${{ secrets.WARD_KEY_ALIAS }}
       run: |
         if [ -z "$KEYSTORE_BASE64" ]; then
           if [ -n "$RELEASE_TAG" ]; then
@@ -107,8 +110,29 @@ jobs:
           echo "::warning::Нет секрета WARD_KEYSTORE_BASE64 - APK будет неподписанным"
           exit 0
         fi
-        echo "$KEYSTORE_BASE64" | base64 -d > "${{ github.workspace }}/V2rayNG/ward-release.jks"
-        echo "WARD_KEYSTORE_FILE=${{ github.workspace }}/V2rayNG/ward-release.jks" >> $GITHUB_ENV
+        KEYSTORE_PATH="${{ github.workspace }}/V2rayNG/ward-release.jks"
+
+        # Из секрета убираем переводы строк, возвраты каретки и пробелы: секрет
+        # набирают руками, и перенос строки из редактора роняет декодирование
+        printf '%s' "$KEYSTORE_BASE64" | tr -d '\r\n \t' | base64 -d > "$KEYSTORE_PATH" 2>/dev/null || {
+          echo "::error::WARD_KEYSTORE_BASE64 не разбирается как base64 (длина секрета: ${#KEYSTORE_BASE64}). Пересоздайте его командой base64 -w0 ward-release.jks"
+          exit 1
+        }
+
+        if [ ! -s "$KEYSTORE_PATH" ]; then
+          echo "::error::После декодирования файл ключа пустой"
+          exit 1
+        fi
+
+        # Пароль проверяем здесь: иначе ошибка всплывёт где-то в середине сборки
+        if ! keytool -list -keystore "$KEYSTORE_PATH" \
+              -storepass "$WARD_KEYSTORE_PASSWORD" \
+              -alias "$WARD_KEY_ALIAS" > /dev/null 2>&1; then
+          echo "::error::Ключ не открывается: проверьте WARD_KEYSTORE_PASSWORD и WARD_KEY_ALIAS"
+          exit 1
+        fi
+
+        echo "WARD_KEYSTORE_FILE=$KEYSTORE_PATH" >> $GITHUB_ENV
 
     - name: Build APK
       env:
