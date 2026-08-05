@@ -134,10 +134,19 @@ object HttpUtil {
     }
 
     /**
-     * User-Agent приложения: имя клиента, версия и версия Android.
-     * Панели подписок разбирают отсюда клиента и систему, поэтому версия ОС здесь нужна.
+     * User-Agent для запроса подписки.
+     *
+     * ВАЖНО: панели выбирают по нему формат выдачи. Незнакомый клиент получает не JSON,
+     * а обычные ссылки, поэтому здесь остаётся токен, который панели знают. Своё имя
+     * приложение сообщает отдельным заголовком - см. [clientUserAgent].
      */
-    fun defaultUserAgent(): String =
+    fun defaultUserAgent(): String = "v2rayNG/${BuildConfig.VERSION_NAME}"
+
+    /**
+     * Собственное имя клиента с версией системы - для заголовка x-user-agent,
+     * по которому панель показывает устройство в списке. На формат выдачи не влияет.
+     */
+    fun clientUserAgent(): String =
         "VanguardClient/${BuildConfig.VERSION_NAME} (Android ${android.os.Build.VERSION.RELEASE})"
 
     /**

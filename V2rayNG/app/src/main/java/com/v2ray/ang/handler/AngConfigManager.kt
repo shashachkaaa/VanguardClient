@@ -626,7 +626,7 @@ object AngConfigManager {
             headersMap["x-device-os"] = "Android"
             headersMap["x-ver-os"] = android.os.Build.VERSION.RELEASE ?: android.os.Build.VERSION.SDK_INT.toString()
             headersMap["x-device-model"] = android.os.Build.MODEL ?: "Android"
-            headersMap["x-user-agent"] = HttpUtil.defaultUserAgent()
+            headersMap["x-user-agent"] = HttpUtil.clientUserAgent()
 
             // Переводим обратно в JSON-строку, которую ожидает UrlContentRequest
             val finalHeadersJson = try {
