@@ -50,7 +50,6 @@ import com.v2ray.ang.ui.compose.AppListItem
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.colorFabActive
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 import androidx.compose.ui.graphics.Color
 import com.v2ray.ang.ui.compose.GlassMenuShape
@@ -270,7 +269,6 @@ fun PerAppProxyScreen(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScrollbar(listState)
             ) {
                 items(items = apps, key = { it.packageName }) { app ->
                     val checked = blacklist.contains(app.packageName)

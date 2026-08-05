@@ -35,7 +35,6 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppListItem
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.ItemDivider
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.ui.compose.GlassMenuShape
@@ -185,7 +184,6 @@ fun AppPickerScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScrollbar(listState)
         ) {
             items(items = apps, key = { it.packageName }) { app ->
                 val checked = selectedPackages.contains(app.packageName)

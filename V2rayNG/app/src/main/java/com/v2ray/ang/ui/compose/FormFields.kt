@@ -130,8 +130,7 @@ fun FormDropdownField(
             expanded = expanded,
             onDismissRequest = { expanded = false },
             modifier = Modifier
-                .glassPanel(GlassMenuShape)
-                .verticalScrollbar(menuScrollState),
+                .glassPanel(GlassMenuShape),
             scrollState = menuScrollState,
             containerColor = Color.Transparent,
             shadowElevation = 0.dp

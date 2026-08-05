@@ -41,7 +41,6 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -190,7 +189,6 @@ fun SubEditScreen(
                 .consumeWindowInsets(innerPadding)
                 .imePadding()
                 .verticalScroll(scrollState)
-                .verticalScrollbar(scrollState)
                 .padding(vertical = 8.dp)
                 .padding(bottom = 36.dp)
         ) {

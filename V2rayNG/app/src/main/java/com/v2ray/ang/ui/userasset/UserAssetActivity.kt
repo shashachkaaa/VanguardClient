@@ -58,7 +58,6 @@ import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.SettingsListItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
@@ -316,7 +315,6 @@ fun UserAssetScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScrollbar(listState)
         ) {
             item(key = "geo_source_$trigger") {
                 SettingsListItem(

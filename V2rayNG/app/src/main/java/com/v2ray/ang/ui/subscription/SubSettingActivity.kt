@@ -52,7 +52,6 @@ import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
 import com.v2ray.ang.ui.compose.colorFabActive
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.QRCodeDecoder
 import com.v2ray.ang.util.Utils
 import sh.calvin.reorderable.ReorderableItem
@@ -147,7 +146,6 @@ fun SubSettingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScrollbar(lazyListState)
         ) {
             itemsIndexed(
                 items = subscriptions,

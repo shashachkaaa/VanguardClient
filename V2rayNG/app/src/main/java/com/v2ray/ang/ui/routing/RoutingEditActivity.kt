@@ -46,7 +46,6 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -207,7 +206,6 @@ fun RoutingEditScreen(
                 .consumeWindowInsets(innerPadding)
                 .imePadding()
                 .verticalScroll(scrollState)
-                .verticalScrollbar(scrollState)
                 .padding(vertical = 8.dp)
         ) {
             FormTextField(

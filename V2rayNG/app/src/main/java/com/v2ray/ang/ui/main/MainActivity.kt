@@ -163,14 +163,6 @@ class MainActivity : HelperBaseComponentActivity() {
             "check_update" -> Intent(this, CheckUpdateActivity::class.java)
             "backup_restore" -> Intent(this, BackupActivity::class.java)
             "about" -> Intent(this, AboutActivity::class.java)
-            "promotion" -> {
-                Utils.openUri(
-                    this,
-                    "${Utils.decode(AppConfig.APP_PROMOTION_URL)}?t=${System.currentTimeMillis()}"
-                )
-                return
-            }
-
             else -> return
         }
         settingsActivityLauncher.launch(intent)

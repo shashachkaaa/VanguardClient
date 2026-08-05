@@ -35,7 +35,6 @@ import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.LogUtil
 
 class TaskerActivity : BaseComponentActivity() {
@@ -155,7 +154,6 @@ fun TaskerScreen(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScrollbar(listState)
             ) {
                 itemsIndexed(items) { index, remarks ->
                     Row(

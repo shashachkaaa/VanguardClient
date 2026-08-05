@@ -49,7 +49,6 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.reorderableDragHandle
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
 import java.util.UUID
@@ -257,8 +256,7 @@ fun ProxyChainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
                 .consumeWindowInsets(innerPadding)
-                .imePadding()
-                .verticalScrollbar(lazyListState),
+                .imePadding(),
             contentPadding = PaddingValues(
                 top = 8.dp,
                 start = 16.dp,

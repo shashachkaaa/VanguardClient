@@ -81,7 +81,6 @@ import com.v2ray.ang.ui.compose.SettingsListItem
 import com.v2ray.ang.ui.compose.SettingsMenuItem
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
 import com.v2ray.ang.ui.compose.ThemeManager
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.ui.main.GlassBarItem
 import com.v2ray.ang.ui.main.LiquidGlassBar
 import com.v2ray.ang.ui.logcat.LogFileActivity
@@ -299,7 +298,6 @@ private fun SettingsColumn(
 ) {
     Column(
         modifier = modifier
-            .verticalScrollbar(scrollState)
             .verticalScroll(scrollState)
     ) {
         Spacer(modifier = Modifier.height(12.dp))

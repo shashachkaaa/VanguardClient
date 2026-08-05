@@ -58,7 +58,6 @@ import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsListItem
 import com.v2ray.ang.ui.compose.colorConfigType
 import com.v2ray.ang.ui.compose.colorFabActive
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
 import com.v2ray.ang.util.Utils
@@ -259,7 +258,6 @@ fun RoutingSettingScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .verticalScrollbar(lazyListState)
         ) {
             item(key = "domain_strategy") {
                 SettingsListItem(

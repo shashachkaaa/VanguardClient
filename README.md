@@ -26,7 +26,7 @@ Everything else — the cores, the protocols, the config handling — comes from
 
 ## Download
 
-Builds are published in this repository's [Releases](https://github.com/shashachkaaa/VanguardClient/releases).
+Builds are published in this repository's [Releases](https://github.com/shashachkaaa/ward/releases).
 
 Do not download Ward from the v2rayNG release page, and do not expect
 v2rayNG releases to contain any of the changes listed above.

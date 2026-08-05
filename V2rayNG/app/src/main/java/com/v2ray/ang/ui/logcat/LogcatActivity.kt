@@ -47,7 +47,6 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.ResumePauseEffect
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -276,7 +275,6 @@ fun LogcatScreen(
                 state = listState,
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScrollbar(listState)
             ) {
                 itemsIndexed(items = logs, key = { index, _ -> index }) { _, log ->
                     LogcatItem(log = log, onLongClick = { Utils.setClipboard(context, log) })

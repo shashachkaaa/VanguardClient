@@ -42,7 +42,6 @@ import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.ResumePauseEffect
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -236,7 +235,6 @@ fun LogFileScreen(
                     state = listState,
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScrollbar(listState)
                 ) {
                     itemsIndexed(items = lines, key = { index, _ -> index }) { _, line ->
                         Text(

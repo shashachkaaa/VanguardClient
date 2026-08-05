@@ -45,7 +45,6 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
-import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.JsonUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -466,7 +465,6 @@ abstract class BaseServerActivity : BaseComponentActivity() {
                     .consumeWindowInsets(innerPadding)
                     .imePadding()
                     .verticalScroll(scrollState)
-                    .verticalScrollbar(scrollState)
                     .padding(bottom = 36.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 content = content
