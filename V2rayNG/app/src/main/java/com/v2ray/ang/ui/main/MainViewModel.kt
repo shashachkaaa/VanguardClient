@@ -77,6 +77,9 @@ class MainViewModel(
     private val groupPageFlows = ConcurrentHashMap<String, MutableStateFlow<List<ServersCache>>>()
     private val groupLoadMutexes = ConcurrentHashMap<String, Mutex>()
 
+    /** Ожидание второго, уточнённого результата проверки подключения. */
+    private var delayResultJob: Job? = null
+
     private var setupGroupJob: Job? = null
     private var preloadJob: Job? = null
     private var selectedGroupLoadJob: Job? = null
@@ -85,6 +88,11 @@ class MainViewModel(
     private var testingGroupId: String? = null
 
     private val initialPageReady = CompletableDeferred<Unit>()
+
+    companion object {
+        /** Сколько ждать адрес, прежде чем показать результат проверки. */
+        private const val DELAY_RESULT_MERGE_MS = 1500L
+    }
 
     class Factory(
         private val application: Application,
@@ -145,9 +153,15 @@ class MainViewModel(
             is MainServiceEvent.MeasureDelaySuccess -> {
                 _uiState.update { it.copy(statusText = event.content) }
                 // Результат ручной проверки виден только в баннере теста,
-                // а он к этому моменту уже скрыт - показываем плашкой
+                // а он к этому моменту уже скрыт - показываем плашкой.
+                // Служба присылает результат дважды: сперва задержку, следом её же с
+                // адресом. Ждём добавку, иначе плашки выскакивают одна за другой
                 if (!uiState.value.isTesting && event.content.isNotBlank()) {
-                    AppSnackbarManager.show(event.content)
+                    delayResultJob?.cancel()
+                    delayResultJob = viewModelScope.launch {
+                        delay(DELAY_RESULT_MERGE_MS)
+                        AppSnackbarManager.show(event.content)
+                    }
                 }
             }
             MainServiceEvent.MeasureConfigSuccess -> {

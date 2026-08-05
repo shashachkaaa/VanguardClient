@@ -404,6 +404,18 @@ fun CameraXPreview(
     }
 }
 
+/** Одна попытка распознавания. Читатель хранит состояние, поэтому сбрасываем его. */
+private fun decodeOrNull(
+    source: com.google.zxing.LuminanceSource,
+    hints: Map<DecodeHintType, Any>
+): String? = try {
+    qrReader.decode(BinaryBitmap(HybridBinarizer(source)), hints).text
+} catch (_: Exception) {
+    null
+} finally {
+    qrReader.reset()
+}
+
 private fun processImageProxy(
     imageProxy: ImageProxy,
     foundResult: AtomicBoolean,
@@ -414,24 +426,31 @@ private fun processImageProxy(
         return
     }
     try {
-        val buffer = imageProxy.planes[0].buffer
+        val plane = imageProxy.planes[0]
+        val buffer = plane.buffer
         val bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
         val width = imageProxy.width
         val height = imageProxy.height
+
+        // Ширина строки в буфере больше ширины кадра, когда камера добивает строки до
+        // кратности. Раньше ширина бралась из кадра, и картинка расползалась по диагонали -
+        // декодер не находил в ней ничего никогда
         val source = PlanarYUVLuminanceSource(
-            bytes, width, height,
+            bytes, plane.rowStride, height,
             0, 0, width, height,
             false
         )
-        val binaryBitmap = BinaryBitmap(HybridBinarizer(source))
         val hints = mapOf(
             DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE),
             DecodeHintType.TRY_HARDER to true,
             DecodeHintType.CHARACTER_SET to "UTF-8"
         )
-        val result = qrReader.decode(binaryBitmap, hints)
-        val text = result.text
+
+        // Кадр приходит в ориентации сенсора: если в ней не нашлось, пробуем повёрнутый
+        val text = decodeOrNull(source, hints)
+            ?: decodeOrNull(source.rotateCounterClockwise(), hints)
+
         if (!text.isNullOrEmpty() && foundResult.compareAndSet(false, true)) {
             onResult(text)
         }
