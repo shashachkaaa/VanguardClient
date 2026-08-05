@@ -881,6 +881,12 @@ private fun InfoSettings(modifier: Modifier) {
                 value = build,
                 onClick = { copy("build", build) }
             )
+            // По этой строке видно, что именно вошло в установленную сборку
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_commit),
+                value = BuildConfig.GIT_COMMIT,
+                onClick = { copy("commit", BuildConfig.GIT_COMMIT) }
+            )
             // Панели выбирают формат выдачи по этой строке - полезно видеть её целиком
             SettingsInfoItem(
                 title = stringResource(R.string.title_info_user_agent),

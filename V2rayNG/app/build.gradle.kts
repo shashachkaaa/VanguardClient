@@ -5,6 +5,17 @@ plugins {
     id("com.jaredsburrows.license")
 }
 
+/**
+ * Короткий хеш коммита, из которого собрано приложение. Показывается в «Информации»,
+ * чтобы по установленной сборке было видно, что именно в ней есть.
+ * Сборка из архива без .git не должна падать - тогда просто «unknown».
+ */
+val gitCommit: String = runCatching {
+    providers.exec {
+        commandLine("git", "rev-parse", "--short", "HEAD")
+    }.standardOutput.asText.get().trim()
+}.getOrNull()?.takeIf { it.isNotEmpty() } ?: "unknown"
+
 android {
     namespace = "com.v2ray.ang"
     compileSdk = 37
@@ -15,6 +26,8 @@ android {
         targetSdk = 37
         versionCode = 741
         versionName = "0.0.5"
+
+        buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
 
         val abiFilterList = (properties["ABI_FILTERS"] as? String)?.split(';')
         splits {
