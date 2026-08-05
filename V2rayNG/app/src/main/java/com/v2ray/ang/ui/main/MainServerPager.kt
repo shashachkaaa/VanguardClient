@@ -432,206 +432,339 @@ fun ProfileCard(
         ) {
         Column(modifier = Modifier.fillMaxWidth()) {
         servers.forEach { serverCache ->
-            val isSelected = serverCache.guid == selectedGuid
-            
-            val finalDesc = remember(serverCache.guid) {
-                val desc = getProtocolDescription(context, serverCache.profile, serverCache.guid)
-                if (serverCache.profile.configType == com.v2ray.ang.enums.EConfigType.CUSTOM) {
-                    "$desc | JSON"
-                } else {
-                    desc
-                }
-            }
-            
-            // Выбранная строка подсвечивается акцентом, нажатие даёт лёгкое проседание
-            val interactionSource = remember { MutableInteractionSource() }
-            val pressed by interactionSource.collectIsPressedAsState()
-            val cardScale by animateFloatAsState(
-                targetValue = if (pressed) 0.985f else 1f,
-                animationSpec = tween(120),
-                label = "serverScale"
+            ServerRow(
+                serverCache = serverCache,
+                isSelected = serverCache.guid == selectedGuid,
+                onAction = onAction,
+                onSelectServer = onSelectServer,
+                onEditServer = onEditServer
             )
-            val containerColor by animateColorAsState(
-                targetValue = if (isSelected) {
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                } else {
-                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.35f)
-                },
-                animationSpec = tween(300),
-                label = "serverColor"
-            )
-            val accentWidth by animateDpAsState(
-                targetValue = if (isSelected) 4.dp else 0.dp,
-                animationSpec = tween(300),
-                label = "serverAccent"
-            )
+        }
+        }
+        }
+    }
+}
 
-            // Долгое нажатие открывает действия над сервером
-            var showServerMenu by remember(serverCache.guid) { mutableStateOf(false) }
-            var confirmDelete by remember(serverCache.guid) { mutableStateOf(false) }
-            val haptics = LocalHapticFeedback.current
-
-            if (confirmDelete) {
-                DeleteConfirmDialog(
-                    message = serverCache.profile.remarks,
-                    onConfirm = { onAction(MainAction.RemoveServer(serverCache.guid)) },
-                    onDismiss = { confirmDelete = false }
-                )
-            }
-
-            Box {
-            Card(
-                shape = RoundedCornerShape(18.dp),
-                colors = CardDefaults.cardColors(containerColor = containerColor),
-                elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+/**
+ * Раздел «Сервера»: ключи, добавленные по одному, а не пришедшие из подписки.
+ * Обновлять здесь нечего, поэтому из шапки остались только счётчик и пинг.
+ */
+@Composable
+fun StandaloneServersCard(
+    servers: List<ServersCache>,
+    selectedGuid: String?,
+    expanded: Boolean = true,
+    onToggleExpanded: () -> Unit = {},
+    onAction: (MainAction) -> Unit,
+    onPingGroup: () -> Unit,
+    onSelectServer: (String) -> Unit,
+    onEditServer: (String, ProfileItem) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp),
+            shape = RoundedCornerShape(26.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.4f)
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 3.dp)
-                    .scale(cardScale)
-                    .combinedClickable(
-                        interactionSource = interactionSource,
-                        indication = ripple(),
-                        onClick = { onSelectServer(serverCache.guid) },
-                        onLongClick = {
-                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            showServerMenu = true
-                        }
-                    )
+                    .padding(vertical = 14.dp, horizontal = 14.dp)
             ) {
+                val chevronRotation by animateFloatAsState(
+                    targetValue = if (expanded) 0f else -90f,
+                    animationSpec = tween(220),
+                    label = "standaloneChevron"
+                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min)
-                        .padding(vertical = 10.dp, horizontal = 8.dp)
+                        .weight(1f)
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable(onClick = onToggleExpanded)
+                        .padding(vertical = 2.dp)
                 ) {
-                    Box(
+                    ChevronDown(
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
-                            .width(4.dp)
-                            .fillMaxHeight()
-                            .padding(vertical = 2.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(accentWidth)
-                                .fillMaxHeight()
-                                .clip(RoundedCornerShape(50))
-                                .background(MaterialTheme.colorScheme.primary)
-                        )
-                    }
+                            .size(14.dp)
+                            .graphicsLayer { rotationZ = chevronRotation }
+                    )
                     Spacer(Modifier.width(8.dp))
-
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(
-                                color = if (isSelected) {
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
-                                } else {
-                                    MaterialTheme.colorScheme.surfaceContainerHighest
-                                },
-                                shape = RoundedCornerShape(12.dp)
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        WireframeGlobe(
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            },
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(12.dp))
 
                     Column(Modifier.weight(1f)) {
                         Text(
-                            text = serverCache.profile.remarks ?: stringResource(R.string.main_untitled),
-                            fontWeight = FontWeight.ExtraBold,
+                            text = stringResource(R.string.main_standalone_servers),
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.ExtraBold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                        Spacer(Modifier.height(2.dp))
                         Text(
-                            text = finalDesc,
-                            fontSize = 10.sp,
+                            text = stringResource(R.string.main_standalone_count, servers.size),
+                            fontSize = 9.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.6.sp,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    
-                    // Пинг подаётся плашкой, чтобы не сливался с описанием
-                    val delay = serverCache.testDelayMillis
-                    if (delay != 0L) {
-                        val pingColor = when {
-                            delay < 0L -> MaterialTheme.colorScheme.error
-                            delay <= 300L -> Color(0xFF16A34A)
-                            else -> Color(0xFFF59E0B)
-                        }
-                        Text(
-                            text = if (delay > 0L) "$delay ms" else stringResource(R.string.main_ping_timeout),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = pingColor,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier
-                                .background(pingColor.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                    }
-                    
-                    IconButton(
-                        onClick = { onEditServer(serverCache.guid, serverCache.profile) },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        ChevronRight(
-                            color = MaterialTheme.colorScheme.outlineVariant,
-                            modifier = Modifier.size(14.dp)
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
+
+                GlassSurface(
+                    shape = GlassCapsuleShape,
+                    opaqueness = 0.85f,
+                    fallbackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                    ) {
+                        IconButton(onClick = onPingGroup, modifier = Modifier.size(28.dp)) {
+                            ClockIcon(
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(220)),
+            exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(160))
+        ) {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                servers.forEach { serverCache ->
+                    ServerRow(
+                        serverCache = serverCache,
+                        isSelected = serverCache.guid == selectedGuid,
+                        onAction = onAction,
+                        onSelectServer = onSelectServer,
+                        onEditServer = onEditServer
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Строка сервера: одна и та же и в подписке, и в разделе отдельных серверов.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ServerRow(
+    serverCache: ServersCache,
+    isSelected: Boolean,
+    onAction: (MainAction) -> Unit,
+    onSelectServer: (String) -> Unit,
+    onEditServer: (String, ProfileItem) -> Unit
+) {
+    val context = LocalContext.current
+
+    val finalDesc = remember(serverCache.guid) {
+        val desc = getProtocolDescription(context, serverCache.profile, serverCache.guid)
+        if (serverCache.profile.configType == com.v2ray.ang.enums.EConfigType.CUSTOM) {
+            "$desc | JSON"
+        } else {
+            desc
+        }
+    }
+    
+    // Выбранная строка подсвечивается акцентом, нажатие даёт лёгкое проседание
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val cardScale by animateFloatAsState(
+        targetValue = if (pressed) 0.985f else 1f,
+        animationSpec = tween(120),
+        label = "serverScale"
+    )
+    val containerColor by animateColorAsState(
+        targetValue = if (isSelected) {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
+        } else {
+            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.35f)
+        },
+        animationSpec = tween(300),
+        label = "serverColor"
+    )
+    val accentWidth by animateDpAsState(
+        targetValue = if (isSelected) 4.dp else 0.dp,
+        animationSpec = tween(300),
+        label = "serverAccent"
+    )
+
+    // Долгое нажатие открывает действия над сервером
+    var showServerMenu by remember(serverCache.guid) { mutableStateOf(false) }
+    var confirmDelete by remember(serverCache.guid) { mutableStateOf(false) }
+    val haptics = LocalHapticFeedback.current
+
+    if (confirmDelete) {
+        DeleteConfirmDialog(
+            message = serverCache.profile.remarks,
+            onConfirm = { onAction(MainAction.RemoveServer(serverCache.guid)) },
+            onDismiss = { confirmDelete = false }
+        )
+    }
+
+    Box {
+    Card(
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(containerColor = containerColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 3.dp)
+            .scale(cardScale)
+            .combinedClickable(
+                interactionSource = interactionSource,
+                indication = ripple(),
+                onClick = { onSelectServer(serverCache.guid) },
+                onLongClick = {
+                    haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                    showServerMenu = true
+                }
+            )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(vertical = 10.dp, horizontal = 8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(4.dp)
+                    .fillMaxHeight()
+                    .padding(vertical = 2.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .width(accentWidth)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(50))
+                        .background(MaterialTheme.colorScheme.primary)
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.15f)
+                        } else {
+                            MaterialTheme.colorScheme.surfaceContainerHighest
+                        },
+                        shape = RoundedCornerShape(12.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                WireframeGlobe(
+                    color = if (isSelected) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(22.dp)
+                )
             }
 
-            DropdownMenu(
-                expanded = showServerMenu,
-                onDismissRequest = { showServerMenu = false },
-                shape = GlassMenuShape,
-                containerColor = Color.Transparent,
-                shadowElevation = 0.dp,
-                modifier = Modifier.glassPanel(GlassMenuShape)
+            Spacer(Modifier.width(12.dp))
+
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = serverCache.profile.remarks ?: stringResource(R.string.main_untitled),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 16.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = finalDesc,
+                    fontSize = 10.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.6.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            
+            // Пинг подаётся плашкой, чтобы не сливался с описанием
+            val delay = serverCache.testDelayMillis
+            if (delay != 0L) {
+                val pingColor = when {
+                    delay < 0L -> MaterialTheme.colorScheme.error
+                    delay <= 300L -> Color(0xFF16A34A)
+                    else -> Color(0xFFF59E0B)
+                }
+                Text(
+                    text = if (delay > 0L) "$delay ms" else stringResource(R.string.main_ping_timeout),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = pingColor,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier
+                        .background(pingColor.copy(alpha = 0.12f), RoundedCornerShape(8.dp))
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+                Spacer(Modifier.width(4.dp))
+            }
+            
+            IconButton(
+                onClick = { onEditServer(serverCache.guid, serverCache.profile) },
+                modifier = Modifier.size(32.dp)
             ) {
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.main_share_link), color = MaterialTheme.colorScheme.onSurface) },
-                    onClick = {
-                        showServerMenu = false
-                        onAction(MainAction.ShareClipboard(serverCache.guid))
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.main_share_qr), color = MaterialTheme.colorScheme.onSurface) },
-                    onClick = {
-                        showServerMenu = false
-                        onAction(MainAction.ShareQRCode(serverCache.guid))
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
-                    onClick = {
-                        showServerMenu = false
-                        confirmDelete = true
-                    }
+                ChevronRight(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    modifier = Modifier.size(14.dp)
                 )
             }
+        }
+    }
+
+    DropdownMenu(
+        expanded = showServerMenu,
+        onDismissRequest = { showServerMenu = false },
+        shape = GlassMenuShape,
+        containerColor = Color.Transparent,
+        shadowElevation = 0.dp,
+        modifier = Modifier.glassPanel(GlassMenuShape)
+    ) {
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.main_share_link), color = MaterialTheme.colorScheme.onSurface) },
+            onClick = {
+                showServerMenu = false
+                onAction(MainAction.ShareClipboard(serverCache.guid))
             }
-        }
-        }
-        }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.main_share_qr), color = MaterialTheme.colorScheme.onSurface) },
+            onClick = {
+                showServerMenu = false
+                onAction(MainAction.ShareQRCode(serverCache.guid))
+            }
+        )
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
+            onClick = {
+                showServerMenu = false
+                confirmDelete = true
+            }
+        )
+    }
     }
 }

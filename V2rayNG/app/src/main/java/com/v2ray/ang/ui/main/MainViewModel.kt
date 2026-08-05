@@ -64,6 +64,11 @@ class MainViewModel(
     private val _subscriptions = MutableStateFlow<List<SubscriptionCache>>(emptyList())
     val subscriptions: StateFlow<List<SubscriptionCache>> = _subscriptions.asStateFlow()
 
+    private val _hasStandaloneServers = MutableStateFlow(false)
+
+    /** Есть ли сервера, добавленные ключом: от этого зависит, рисовать ли их раздел. */
+    val hasStandaloneServers: StateFlow<Boolean> = _hasStandaloneServers.asStateFlow()
+
     val isImporting = MutableStateFlow(false)
     val importError = MutableStateFlow<String?>(null)
 
@@ -465,8 +470,19 @@ class MainViewModel(
                 
                 val subs = getSubscriptions().toList()
                 _subscriptions.value = subs
-                
-                val groups = subs.map { GroupMapItem(id = it.guid, remarks = it.subscription.remarks) }
+
+                // Сервера, добавленные ключом, живут отдельной группой впереди подписок.
+                // Пустой её не делаем: показывать нечего
+                val hasStandalone = dataSource.getServerGuidList(STANDALONE_GROUP_ID).isNotEmpty()
+                _hasStandaloneServers.value = hasStandalone
+
+                val standaloneGroup = if (hasStandalone) {
+                    listOf(GroupMapItem(id = STANDALONE_GROUP_ID, remarks = ""))
+                } else {
+                    emptyList()
+                }
+                val groups = standaloneGroup +
+                        subs.map { GroupMapItem(id = it.guid, remarks = it.subscription.remarks) }
                 val selectedGroup = resolveSelectedGroup(groups)
                 val validIds = groups.mapTo(HashSet()) { it.id }
                 groupPageFlows.keys.removeAll { it !in validIds }
@@ -517,25 +533,29 @@ class MainViewModel(
 
     private fun importBatchConfig(configText: String) {
         val isUrl = configText.startsWith("http://", true) || configText.startsWith("https://", true)
-        val targetGroupId = if (isUrl) "" else uiState.value.selectedGroupId
 
         viewModelScope.launch {
             isImporting.value = true
             importError.value = null
             withContext(ioDispatcher) {
                 try {
-                    val (count, countSub) = dataSource.importBatchConfig(configText, targetGroupId, true)
-                    
-                    if (countSub > 0 || isUrl) {
+                    // Одиночный ключ - отдельный сервер, а не часть подписки: положив его
+                    // в подписку, мы бы стёрли его первым же её обновлением
+                    val (count, countSub) = dataSource.importBatchConfig(configText, "", true)
+
+                    // Новую подписку уже подтянул сам импорт; здесь остаётся случай,
+                    // когда адрес был знаком - тогда просто обновляем всё
+                    if (isUrl && countSub == 0) {
                         dataSource.updateConfigViaSubAll()
-                    } else if (count == 0) {
+                    } else if (count == 0 && countSub == 0) {
                         importError.value = dataSource.getString(R.string.main_clipboard_empty)
                     }
-                    
+
                     setupGroupTab(forceRefresh = true).join()
-                    val newSub = _subscriptions.value.lastOrNull()
-                    if (newSub != null) subscriptionIdChanged(newSub.guid)
-                    
+                    if (countSub > 0) {
+                        _subscriptions.value.lastOrNull()?.let { subscriptionIdChanged(it.guid) }
+                    }
+
                 } catch (cancelled: CancellationException) {
                     throw cancelled
                 } catch (e: Exception) {
@@ -605,7 +625,16 @@ class MainViewModel(
         }
     }
 
-    private fun removeServerAndRefresh(guid: String) {}
+    /** Удаление одного сервера: список группы после этого перечитывается заново. */
+    private fun removeServerAndRefresh(guid: String) {
+        viewModelScope.launch(ioDispatcher) {
+            dataSource.removeServer(guid)
+            if (uiState.value.selectedGuid == guid) {
+                _uiState.update { it.copy(selectedGuid = dataSource.getSelectServer()) }
+            }
+            setupGroupTab(forceRefresh = true)
+        }
+    }
     private fun filterConfig(query: String) {}
     private fun consumeLocateTarget(target: LocateTarget) {}
     private fun onTestsFinished() {}

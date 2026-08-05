@@ -89,14 +89,23 @@ class UrlSchemeActivity : BaseComponentActivity() {
      * своей схемой, запросом и якорем, и разбор по частям его развалит.
      */
     private fun addPayload(raw: String?, uri: Uri): String? {
-        // Значение параметра система раскодирует сама, второй раз этого делать нельзя
-        uri.getQueryParameter("url")?.takeIf { it.isNotBlank() }?.let { return it }
-
         if (raw.isNullOrBlank()) return null
-        val prefix = "${uri.scheme}://${uri.host}/"
-        if (!raw.startsWith(prefix, ignoreCase = true)) return null
 
-        return decodePercent(raw.substring(prefix.length)).takeIf { it.isNotBlank() }
+        val base = "${uri.scheme}://${uri.host}"
+        if (!raw.startsWith(base, ignoreCase = true)) return null
+
+        // Ссылку берём из сырой строки во всех видах записи: и `add/<ссылка>`,
+        // и `add?url=<ссылка>`
+        var tail = raw.substring(base.length).removePrefix("/").removePrefix("?")
+        if (tail.startsWith("url=", ignoreCase = true)) {
+            tail = tail.substring("url=".length)
+        }
+        if (tail.isBlank()) return null
+
+        // Ссылка со схемой пришла как есть - раскодировать её нельзя: внутри
+        // лежат свои проценты (JSON в параметрах, эмодзи в названии), и лишний
+        // проход развалил бы адрес
+        return if (tail.contains("://")) tail else decodePercent(tail).takeIf { it.isNotBlank() }
     }
 
     /**
@@ -120,7 +129,9 @@ class UrlSchemeActivity : BaseComponentActivity() {
 
         lifecycleScope.launch(Dispatchers.IO) {
             val (count, countSub) = try {
-                AngConfigManager.importBatchConfig(url, "", false)
+                // Дописываем к тому, что уже есть: с заменой каждый импорт ключа
+                // стирал бы все добавленные до него
+                AngConfigManager.importBatchConfig(url, "", true)
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to import from url scheme", e)
                 0 to 0

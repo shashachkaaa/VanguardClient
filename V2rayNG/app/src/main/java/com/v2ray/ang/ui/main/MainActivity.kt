@@ -226,7 +226,9 @@ class MainActivity : HelperBaseComponentActivity() {
                 putExtra("createConfigType", createConfigType)
             }
         }.apply {
-            putExtra("subscriptionId", mainViewModel.uiState.value.selectedGroupId)
+            // Сервер, заведённый руками, живёт в разделе отдельных серверов:
+            // в подписке его стёрло бы первым же её обновлением
+            putExtra("subscriptionId", STANDALONE_GROUP_ID)
         }
         profileEditorLauncher.launch(intent)
     }

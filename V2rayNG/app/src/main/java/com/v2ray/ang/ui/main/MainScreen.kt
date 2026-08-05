@@ -182,9 +182,19 @@ fun MainScreen(
         }
     }
 
+    // Сервера, добавленные ключом: свой раздел над подписками, пустым не показывается
+    val standaloneServers by remember { mainViewModel.serversForGroup(STANDALONE_GROUP_ID) }
+        .collectAsStateWithLifecycle(initialValue = emptyList())
+    val hasStandalone by mainViewModel.hasStandaloneServers.collectAsStateWithLifecycle()
+    val showStandalone = hasStandalone && standaloneServers.isNotEmpty()
+
     // Свёрнутые карточки: «Скрыть все» прячет списки серверов, шапки остаются
     var collapsedGuids by rememberSaveable { mutableStateOf(listOf<String>()) }
-    val allCollapsed = subscriptions.isNotEmpty() && collapsedGuids.size >= subscriptions.size
+    val collapsibleGuids = buildList {
+        if (showStandalone) add(STANDALONE_GROUP_ID)
+        subscriptions.forEach { add(it.guid) }
+    }
+    val allCollapsed = collapsibleGuids.isNotEmpty() && collapsedGuids.size >= collapsibleGuids.size
 
     // Стекло размывает именно то, что под ним, поэтому экран пишется в слой
     val backdrop = rememberGlassBackdrop()
@@ -239,16 +249,12 @@ fun MainScreen(
                     ActionChip(
                         text = stringResource(if (allCollapsed) R.string.main_action_expand_all else R.string.main_action_collapse_all),
                         onClick = {
-                            collapsedGuids = if (allCollapsed) {
-                                emptyList()
-                            } else {
-                                subscriptions.map { it.guid }
-                            }
+                            collapsedGuids = if (allCollapsed) emptyList() else collapsibleGuids
                         }
                     )
                 }
 
-                if (subscriptions.isEmpty()) {
+                if (subscriptions.isEmpty() && !showStandalone) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(
@@ -273,6 +279,32 @@ fun MainScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         contentPadding = PaddingValues(bottom = 110.dp)
                     ) {
+                        if (showStandalone) {
+                            item(key = "standalone-servers") {
+                                StandaloneServersCard(
+                                    servers = standaloneServers,
+                                    selectedGuid = uiState.selectedGuid,
+                                    expanded = STANDALONE_GROUP_ID !in collapsedGuids,
+                                    onToggleExpanded = {
+                                        collapsedGuids = if (STANDALONE_GROUP_ID in collapsedGuids) {
+                                            collapsedGuids - STANDALONE_GROUP_ID
+                                        } else {
+                                            collapsedGuids + STANDALONE_GROUP_ID
+                                        }
+                                    },
+                                    onAction = onAction,
+                                    onPingGroup = {
+                                        onAction(MainAction.SelectGroup(STANDALONE_GROUP_ID))
+                                        onAction(MainAction.TestProfilePing(STANDALONE_GROUP_ID))
+                                    },
+                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                    onEditServer = { guid, profile ->
+                                        onAction(MainAction.EditServer(guid, profile))
+                                    }
+                                )
+                            }
+                        }
+
                         itemsIndexed(
                             items = subscriptions,
                             key = { _, item -> item.guid + (item.subscription.remarks ?: "") }

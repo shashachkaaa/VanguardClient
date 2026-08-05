@@ -194,6 +194,8 @@
     <string name="main_import_qr">Scan QR code</string>
     <string name="main_import_file">Import from file</string>
     <string name="main_session_traffic">Session: %1$s down · %2$s up</string>
+    <string name="main_standalone_servers">Servers</string>
+    <string name="main_standalone_count">added by key: %1$d</string>
     <string name="title_pref_dynamic_color">Wallpaper colours</string>
     <string name="summary_pref_dynamic_color">Take the accent from the system wallpaper. The dark theme keeps its black background</string>
     <string name="title_pref_accent_color">Accent colour</string>

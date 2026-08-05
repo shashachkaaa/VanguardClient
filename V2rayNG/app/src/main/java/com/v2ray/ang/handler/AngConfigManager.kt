@@ -856,7 +856,11 @@ object AngConfigManager {
         }
         val uri = URI(Utils.fixIllegalUrl(url))
         val subItem = SubscriptionItem()
-        subItem.remarks = uri.fragment ?: "import sub"
+        // Пока подписка не ответила, карточка подписана адресом, а не заглушкой:
+        // «import sub» мелькал на экране до первого ответа сервера
+        subItem.remarks = uri.fragment?.takeIf { it.isNotBlank() }
+            ?: uri.host?.takeIf { it.isNotBlank() }
+                    ?: "import sub"
         subItem.url = url
         MmkvManager.encodeSubscription("", subItem)
         return 1
