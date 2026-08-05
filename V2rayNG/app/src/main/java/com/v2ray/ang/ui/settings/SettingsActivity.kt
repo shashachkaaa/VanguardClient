@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
@@ -21,6 +22,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,6 +43,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.asImageBitmap
+import android.graphics.Canvas
+import androidx.core.graphics.createBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -852,7 +859,32 @@ private fun InfoSettings(modifier: Modifier) {
         AppSnackbarManager.show("$copiedText: $label")
     }
 
+    // Иконка берётся у системы ровно так же, как её берут лаунчер и шторка.
+    // Если здесь новый знак, а в шторке старый - значит там просто залежался кеш
+    val appIcon = remember {
+        runCatching {
+            val drawable = context.packageManager.getApplicationIcon(context.packageName)
+            val size = 192
+            val bitmap = createBitmap(size, size)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+
     SettingsColumn(modifier, grouped = false) {
+        appIcon?.let {
+            Image(
+                bitmap = it,
+                contentDescription = null,
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .size(84.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .align(Alignment.CenterHorizontally)
+            )
+        }
+
         PreferenceGroupHeader(title = stringResource(R.string.title_info_about))
         SettingsGroupCard {
             val appName = stringResource(R.string.app_name)
