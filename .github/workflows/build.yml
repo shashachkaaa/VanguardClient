@@ -94,40 +94,75 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
+    - name: Restore signing keystore
+      env:
+        KEYSTORE_BASE64: ${{ secrets.WARD_KEYSTORE_BASE64 }}
+        RELEASE_TAG: ${{ inputs.release_tag }}
+      run: |
+        if [ -z "$KEYSTORE_BASE64" ]; then
+          if [ -n "$RELEASE_TAG" ]; then
+            echo "::error::Нет секрета WARD_KEYSTORE_BASE64 - релиз собирать нечем"
+            exit 1
+          fi
+          echo "::warning::Нет секрета WARD_KEYSTORE_BASE64 - APK будет неподписанным"
+          exit 0
+        fi
+        echo "$KEYSTORE_BASE64" | base64 -d > "${{ github.workspace }}/V2rayNG/ward-release.jks"
+        echo "WARD_KEYSTORE_FILE=${{ github.workspace }}/V2rayNG/ward-release.jks" >> $GITHUB_ENV
+
     - name: Build APK
+      env:
+        WARD_KEYSTORE_PASSWORD: ${{ secrets.WARD_KEYSTORE_PASSWORD }}
+        WARD_KEY_ALIAS: ${{ secrets.WARD_KEY_ALIAS }}
+        WARD_KEY_PASSWORD: ${{ secrets.WARD_KEY_PASSWORD }}
       run: |
         cd ${{ github.workspace }}/V2rayNG
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
-        ./gradlew assembleDebug
+        ./gradlew assembleGithubRelease
+
+    # Сборка без ключа даёт файлы вида *-unsigned.apk, которые не установятся;
+    # ловим это здесь, а не в отзывах пользователей
+    - name: Verify APK signature
+      run: |
+        BUILD_TOOLS=$(ls -d $ANDROID_HOME/build-tools/* | sort -V | tail -1)
+        FAILED=0
+        for apk in ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/github/release/*.apk; do
+          echo "== $(basename "$apk")"
+          if ! "$BUILD_TOOLS/apksigner" verify --print-certs "$apk"; then
+            echo "::error::$(basename "$apk") не подписан"
+            FAILED=1
+          fi
+        done
+        exit $FAILED
 
     - name: Upload arm64-v8a APK
       uses: actions/upload-artifact@v7
       if: ${{  success() }}
       with:
         name: arm64-v8a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/**/*arm64-v8a*.apk
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/github/release/*arm64-v8a*.apk
 
     - name: Upload armeabi-v7a APK
       uses: actions/upload-artifact@v7
       if: ${{  success() }}
       with:
         name: armeabi-v7a
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/**/*armeabi-v7a*.apk
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/github/release/*armeabi-v7a*.apk
 
     - name: Upload x86 APK
       uses: actions/upload-artifact@v7
       if: ${{  success() }}
       with:
         name: x86-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/**/*x86*.apk
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/github/release/*x86*.apk
 
     - name: Upload universal APK
       uses: actions/upload-artifact@v7
       if: ${{ success() }}
       with:
         name: universal-apk
-        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/**/*universal*.apk
+        path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/github/release/*universal*.apk
 
   sign-and-release:
     needs: build
@@ -151,7 +186,10 @@ jobs:
             gpg --batch --yes --local-user "$KEY" --detach-sign --output "release-files/$(basename "$apk").sig" "$apk"
           done
 
-          gpg --armor --export "$KEY" > release-files/v2rayN-public-key.asc
+          # Контрольные суммы одним файлом: их удобно сверять после скачивания
+          (cd release-files && sha256sum *.apk > SHA256SUMS.txt)
+
+          gpg --armor --export "$KEY" > release-files/ward-public-key.asc
 
       - name: Upload APKs, signatures and public key to release
         uses: svenstaro/upload-release-action@v2

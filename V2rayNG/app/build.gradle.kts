@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -16,6 +18,24 @@ val gitCommit: String = runCatching {
     }.standardOutput.asText.get().trim()
 }.getOrNull()?.takeIf { it.isNotEmpty() } ?: "unknown"
 
+/**
+ * Ключ подписи релиза. Берётся из переменных окружения (так его передаёт CI)
+ * или из keystore.properties рядом с проектом; в репозитории ни того, ни другого нет.
+ *
+ * Без ключа релиз собирается неподписанным: локальная сборка не должна падать
+ * из-за того, что у разработчика нет боевого ключа.
+ */
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+
+fun signingSecret(name: String): String? =
+    (System.getenv(name) ?: keystoreProperties.getProperty(name))?.takeIf { it.isNotBlank() }
+
+val releaseKeystore = signingSecret("WARD_KEYSTORE_FILE")?.let { rootProject.file(it) }
+    ?.takeIf { it.exists() }
+
 android {
     namespace = "com.v2ray.ang"
     compileSdk = 37
@@ -25,7 +45,9 @@ android {
         minSdk = 24
         targetSdk = 37
         versionCode = 741
-        versionName = "0.0.5"
+        // Без суффиксов вида -beta: строка уходит в User-Agent подписок и в сравнение
+        // версий при проверке обновлений. Что сборка бета - помечается самим релизом
+        versionName = "0.9.0"
 
         buildConfigField("String", "GIT_COMMIT", "\"$gitCommit\"")
 
@@ -51,8 +73,22 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = signingSecret("WARD_KEYSTORE_PASSWORD")
+                keyAlias = signingSecret("WARD_KEY_ALIAS")
+                keyPassword = signingSecret("WARD_KEY_PASSWORD")
+                enableV1Signing = true
+                enableV2Signing = true
+            }
+        }
+    }
+
     buildTypes {
         release {
+            signingConfig = signingConfigs.findByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -68,9 +104,9 @@ android {
             applicationIdSuffix = ".fdroid"
             buildConfigField("String", "DISTRIBUTION", "\"F-Droid\"")
         }
-        create("playstore") {
+        create("github") {
             dimension = "distribution"
-            buildConfigField("String", "DISTRIBUTION", "\"Play Store\"")
+            buildConfigField("String", "DISTRIBUTION", "\"GitHub\"")
         }
     }
 
