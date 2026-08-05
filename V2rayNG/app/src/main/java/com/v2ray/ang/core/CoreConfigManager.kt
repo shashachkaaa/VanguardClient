@@ -154,6 +154,7 @@ object CoreConfigManager {
 
         // The log level and the log files are app settings, so they win over the raw config
         applyLogSettings(json, context)
+        applyStatsSettings(json)
 
         if (needTun()) {
             // Check whether package names need to be replaced with UIDs
@@ -213,6 +214,27 @@ object CoreConfigManager {
             log.addProperty("access", access)
             log.addProperty("error", error)
         }
+    }
+
+    /**
+     * Включает счётчики трафика в сыром конфиге.
+     *
+     * Готовые конфиги из панелей приходят без секций stats и policy, поэтому ядру нечего
+     * было отдавать - скорость и расход за сеанс показывали нули. Чужие настройки не
+     * затираем, дописываем только нужные флаги.
+     */
+    private fun applyStatsSettings(json: JsonObject) {
+        if (json.get("stats")?.isJsonObject != true) {
+            json.add("stats", JsonObject())
+        }
+
+        val policy = json.get("policy")?.takeIf { it.isJsonObject }?.asJsonObject
+            ?: JsonObject().also { json.add("policy", it) }
+        val system = policy.get("system")?.takeIf { it.isJsonObject }?.asJsonObject
+            ?: JsonObject().also { policy.add("system", it) }
+
+        system.addProperty("statsOutboundUplink", true)
+        system.addProperty("statsOutboundDownlink", true)
     }
 
     /**

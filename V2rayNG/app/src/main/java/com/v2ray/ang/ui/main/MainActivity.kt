@@ -183,8 +183,9 @@ class MainActivity : HelperBaseComponentActivity() {
         if (mainViewModel.uiState.value.isRunning) {
             mainViewModel.testCurrentServerRealPing()
         } else {
-            // Раньше кнопка молчала: без подключения замерять нечего
-            toast(R.string.connection_test_fail)
+            // Раньше кнопка молчала, потом врала про отсутствие интернета -
+            // на деле проверять нечего, пока нет подключения к серверу
+            toast(R.string.main_test_needs_connection)
         }
     }
 

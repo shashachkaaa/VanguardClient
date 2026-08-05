@@ -63,7 +63,6 @@ import com.v2ray.ang.extension.toTrafficString
 import com.v2ray.ang.handler.LogFileManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
-import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppSnackbarManager
@@ -336,8 +335,6 @@ private fun SettingsCategoryList(
 private fun UiSettings(modifier: Modifier) {
     var speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, false)
     var confirmRemove by rememberMmkvBool(AppConfig.PREF_CONFIRM_REMOVE, false)
-    var doubleColumnDisplay by rememberMmkvBool(AppConfig.PREF_DOUBLE_COLUMN_DISPLAY, false)
-    var groupAllDisplay by rememberMmkvBool(AppConfig.PREF_GROUP_ALL_DISPLAY, false)
     var language by rememberMmkvString(AppConfig.PREF_LANGUAGE, "auto")
     var uiModeNight by rememberMmkvString(AppConfig.PREF_UI_MODE_NIGHT, "0")
 
@@ -369,24 +366,6 @@ private fun UiSettings(modifier: Modifier) {
             summary = stringResource(R.string.summary_pref_confirm_remove),
             checked = confirmRemove,
             onCheckedChange = { confirmRemove = it }
-        )
-        SettingsSwitchItem(
-            title = stringResource(R.string.title_pref_double_column_display),
-            summary = stringResource(R.string.summary_pref_double_column_display),
-            checked = doubleColumnDisplay,
-            onCheckedChange = {
-                doubleColumnDisplay = it
-                SettingsChangeManager.makeSetupGroupTab()
-            }
-        )
-        SettingsSwitchItem(
-            title = stringResource(R.string.title_pref_group_all_display),
-            summary = stringResource(R.string.summary_pref_group_all_display),
-            checked = groupAllDisplay,
-            onCheckedChange = {
-                groupAllDisplay = it
-                SettingsChangeManager.makeSetupGroupTab()
-            }
         )
         SettingsListItem(
             title = stringResource(R.string.title_language),

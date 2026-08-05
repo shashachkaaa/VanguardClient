@@ -55,8 +55,7 @@ class MainViewModel(
             selectedGroupId = dataSource.getSelectedSubscriptionId(),
             selectedGuid = dataSource.getSelectServer(),
             statusText = disconnectedText,
-            confirmRemove = dataSource.getConfirmRemove(),
-            doubleColumnDisplay = dataSource.getDoubleColumnDisplay()
+            confirmRemove = dataSource.getConfirmRemove()
         )
     )
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -357,8 +356,7 @@ class MainViewModel(
     fun refreshUiSettings() {
         _uiState.update {
             it.copy(
-                confirmRemove = dataSource.getConfirmRemove(),
-                doubleColumnDisplay = dataSource.getDoubleColumnDisplay()
+                confirmRemove = dataSource.getConfirmRemove()
             )
         }
     }

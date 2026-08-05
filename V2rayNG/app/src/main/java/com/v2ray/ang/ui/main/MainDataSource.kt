@@ -19,8 +19,6 @@ interface MainDataSource : Closeable {
     fun setSelectServer(guid: String)
 
     fun getConfirmRemove(): Boolean
-    fun getDoubleColumnDisplay(): Boolean
-    fun isGroupAllDisplayEnabled(): Boolean
 
     fun getString(resId: Int): String
     fun getString(resId: Int, vararg formatArgs: Any): String

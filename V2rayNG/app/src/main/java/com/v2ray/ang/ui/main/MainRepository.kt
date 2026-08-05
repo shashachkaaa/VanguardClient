@@ -7,7 +7,6 @@ import android.content.IntentFilter
 import androidx.core.content.ContextCompat
 import com.v2ray.ang.AngApplication
 import com.v2ray.ang.AppConfig
-import com.v2ray.ang.R
 import com.v2ray.ang.dto.SubscriptionUpdateResult
 import com.v2ray.ang.dto.TestServiceMessage
 import com.v2ray.ang.dto.entities.ProfileItem
@@ -110,29 +109,12 @@ class MainRepository(
     override fun getConfirmRemove(): Boolean =
         MmkvManager.decodeSettingsBool(AppConfig.PREF_CONFIRM_REMOVE, false)
 
-    override fun getDoubleColumnDisplay(): Boolean =
-        MmkvManager.decodeSettingsBool(AppConfig.PREF_DOUBLE_COLUMN_DISPLAY, false)
-
-    override fun isGroupAllDisplayEnabled(): Boolean =
-        MmkvManager.decodeSettingsBool(AppConfig.PREF_GROUP_ALL_DISPLAY)
-
     override fun getString(resId: Int): String = app.getString(resId)
 
     override fun getString(resId: Int, vararg formatArgs: Any): String = app.getString(resId, *formatArgs)
 
-    override fun getSubscriptions(): List<SubscriptionCache> {
-        val result = mutableListOf<SubscriptionCache>()
-        if (isGroupAllDisplayEnabled()) {
-            result += SubscriptionCache(
-                guid = "",
-                subscription = SubscriptionItem().apply {
-                    remarks = app.getString(R.string.filter_config_all)
-                }
-            )
-        }
-        result += MmkvManager.decodeSubscriptions()
-        return result
-    }
+    // Псевдогруппа «все подписки» жила при вкладках групп, которых больше нет
+    override fun getSubscriptions(): List<SubscriptionCache> = MmkvManager.decodeSubscriptions()
 
     override fun getSubscriptionItem(id: String): SubscriptionItem? =
         MmkvManager.decodeSubscription(id)

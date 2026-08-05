@@ -15,8 +15,6 @@ object SettingsChangeManager {
     // Keys that affect only UI behavior and do not require core service restart.
     private val uiOnlyKeys = setOf(
         AppConfig.PREF_CONFIRM_REMOVE,
-        AppConfig.PREF_DOUBLE_COLUMN_DISPLAY,
-        AppConfig.PREF_GROUP_ALL_DISPLAY,
         AppConfig.PREF_LANGUAGE,
         AppConfig.PREF_UI_MODE_NIGHT,
         AppConfig.PREF_IS_BOOTED,

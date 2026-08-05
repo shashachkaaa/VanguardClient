@@ -195,6 +195,7 @@
     <string name="main_session_traffic">За сеанс: %1$s ↓ · %2$s ↑</string>
     <string name="title_pref_dynamic_color">Цвета из обоев</string>
     <string name="summary_pref_dynamic_color">Брать акцент из обоев системы. Тёмная тема остаётся с чёрным фоном</string>
+    <string name="main_test_needs_connection">Сначала подключитесь к серверу</string>
     <!-- Preferences -->
     <string name="title_info_commit">Коммит сборки</string>
     <string name="title_info_url_schemes">URL-схемы</string>

@@ -241,6 +241,8 @@ object NotificationManager {
         var proxyDownlink = 0L
         var directUplink = 0L
         var directDownlink = 0L
+        var otherUplink = 0L
+        var otherDownlink = 0L
 
         CoreServiceManager.queryAllOutboundTrafficStats().forEach { stat ->
             when {
@@ -257,12 +259,22 @@ object NotificationManager {
                         AppConfig.DOWNLINK -> proxyDownlink += stat.value
                     }
                 }
+
+                // Готовые конфиги называют исходящие как угодно - без этой ветки
+                // их трафик не попадал бы ни в одну корзину и терялся
+                else -> {
+                    when (stat.direction) {
+                        AppConfig.UPLINK -> otherUplink += stat.value
+                        AppConfig.DOWNLINK -> otherDownlink += stat.value
+                    }
+                }
             }
         }
 
         val proxyTotal = proxyUplink + proxyDownlink
         val directTotal = directUplink + directDownlink
-        val zeroSpeed = proxyTotal + directTotal == 0L
+        val otherTotal = otherUplink + otherDownlink
+        val zeroSpeed = proxyTotal + directTotal + otherTotal == 0L
 
         // Тот же замер отдаём интерфейсу: счётчики ядра приходят с обнулением,
         // так что опрашивать их вторым циклом ради главного экрана нельзя
@@ -271,7 +283,9 @@ object NotificationManager {
                 proxyUp = (proxyUplink / sinceLastQueryInSeconds).toLong(),
                 proxyDown = (proxyDownlink / sinceLastQueryInSeconds).toLong(),
                 directUp = (directUplink / sinceLastQueryInSeconds).toLong(),
-                directDown = (directDownlink / sinceLastQueryInSeconds).toLong()
+                directDown = (directDownlink / sinceLastQueryInSeconds).toLong(),
+                otherUp = (otherUplink / sinceLastQueryInSeconds).toLong(),
+                otherDown = (otherDownlink / sinceLastQueryInSeconds).toLong()
             ),
             intervalSeconds = sinceLastQueryInSeconds
         )

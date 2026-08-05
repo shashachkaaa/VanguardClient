@@ -9,10 +9,13 @@ data class TrafficSpeed(
     val proxyUp: Long = 0L,
     val proxyDown: Long = 0L,
     val directUp: Long = 0L,
-    val directDown: Long = 0L
+    val directDown: Long = 0L,
+    /** Всё, что не опознано как proxy или direct: в чужих конфигах теги называют как угодно. */
+    val otherUp: Long = 0L,
+    val otherDown: Long = 0L
 ) {
-    val totalUp: Long get() = proxyUp + directUp
-    val totalDown: Long get() = proxyDown + directDown
+    val totalUp: Long get() = proxyUp + directUp + otherUp
+    val totalDown: Long get() = proxyDown + directDown + otherDown
 }
 
 /**
