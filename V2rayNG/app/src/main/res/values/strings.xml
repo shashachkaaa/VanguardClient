@@ -164,6 +164,10 @@
     <string name="app_picker_unknown_app">Unknown app (unidentified UID)</string>
 
     <!-- Preferences -->
+    <string name="title_info_url_schemes">URL schemes</string>
+    <string name="summary_info_scheme_add">Adds a subscription or a server key. The link has to be percent-encoded</string>
+    <string name="summary_info_scheme_add_param">The same, with the link passed as a parameter</string>
+    <string name="summary_info_scheme_legacy">Kept for compatibility with v2rayNG links</string>
     <string name="title_info_settings">Information</string>
     <string name="summary_settings_info">App, core and device details</string>
     <string name="title_info_about">About the app</string>

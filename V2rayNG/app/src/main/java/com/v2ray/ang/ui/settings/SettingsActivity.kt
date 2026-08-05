@@ -919,6 +919,26 @@ private fun InfoSettings(modifier: Modifier) {
             )
         }
 
+        // Схемы показываем заголовком строки: они длинные и в колонку значений не влезают
+        PreferenceGroupHeader(title = stringResource(R.string.title_info_url_schemes))
+        SettingsGroupCard {
+            SettingsInfoItem(
+                title = "ward://add/<url>",
+                summary = stringResource(R.string.summary_info_scheme_add),
+                onClick = { copy("ward://add/", "ward://add/") }
+            )
+            SettingsInfoItem(
+                title = "ward://add?url=<url>",
+                summary = stringResource(R.string.summary_info_scheme_add_param),
+                onClick = { copy("ward://add?url=", "ward://add?url=") }
+            )
+            SettingsInfoItem(
+                title = "v2rayng://install-sub?url=<url>",
+                summary = stringResource(R.string.summary_info_scheme_legacy),
+                onClick = { copy("v2rayng://install-sub", "v2rayng://install-sub?url=") }
+            )
+        }
+
         Spacer(modifier = Modifier.height(24.dp))
     }
 }

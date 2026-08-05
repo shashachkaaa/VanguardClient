@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_banner_background">#FFFFFF</color>
+    <!-- Тот же фон, что у иконки приложения -->
+    <color name="ic_banner_background">#131313</color>
 </resources>

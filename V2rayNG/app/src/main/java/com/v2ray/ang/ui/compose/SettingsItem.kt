@@ -185,8 +185,8 @@ private fun SettingsItemRow(
 @Composable
 fun SettingsInfoItem(
     title: String,
-    value: String,
     modifier: Modifier = Modifier,
+    value: String? = null,
     summary: String? = null,
     onClick: (() -> Unit)? = null
 ) {
@@ -197,17 +197,19 @@ fun SettingsInfoItem(
         enabled = true,
         onClick = onClick,
         modifier = modifier,
-        trailing = {
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.End,
-                modifier = Modifier
-                    .padding(start = 16.dp)
-                    .widthIn(max = 190.dp)
-            )
+        trailing = if (value == null) null else {
+            {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier
+                        .padding(start = 16.dp)
+                        .widthIn(max = 190.dp)
+                )
+            }
         }
     )
 }

@@ -163,6 +163,10 @@
     <string name="app_picker_unknown_app">Неизвестное приложение (неопознанный UID)</string>
 
     <!-- Preferences -->
+    <string name="title_info_url_schemes">URL-схемы</string>
+    <string name="summary_info_scheme_add">Добавляет подписку или ключ сервера. Ссылку нужно кодировать процентами</string>
+    <string name="summary_info_scheme_add_param">То же самое, ссылка передаётся параметром</string>
+    <string name="summary_info_scheme_legacy">Оставлена для совместимости со ссылками v2rayNG</string>
     <string name="title_info_settings">Информация</string>
     <string name="summary_settings_info">Данные о приложении, ядре и устройстве</string>
     <string name="title_info_about">О приложении</string>
