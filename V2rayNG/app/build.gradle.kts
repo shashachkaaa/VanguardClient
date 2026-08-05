@@ -40,6 +40,11 @@ android {
     namespace = "com.v2ray.ang"
     compileSdk = 37
 
+    // Версию NDK задаёт сборочная среда; локально берётся та, что стоит в SDK.
+    // Раньше эту строку вклеивал sed по номеру строки - любая правка шапки файла
+    // роняла сборку с «Unresolved reference 'ndkVersion'»
+    System.getenv("WARD_NDK_VERSION")?.takeIf { it.isNotBlank() }?.let { ndkVersion = it }
+
     defaultConfig {
         applicationId = "com.ward.client"
         minSdk = 24
