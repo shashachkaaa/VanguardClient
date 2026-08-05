@@ -234,4 +234,8 @@ jobs:
           file: release-files/*
           tag: ${{ inputs.release_tag }}
           file_glob: true
-          prerelease: true
+          # Не помечаем пре-релизом: иначе /releases/latest, встроенная проверка
+          # обновлений и Obtainium пропускают сборку мимо. Что это бета - написано
+          # в названии релиза и в описании
+          prerelease: false
+          release_name: Ward ${{ inputs.release_tag }} (beta)
