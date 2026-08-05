@@ -46,8 +46,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.v2ray.ang.AppConfig
+import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.AppConfig.VPN
 import com.v2ray.ang.R
+import com.v2ray.ang.core.CoreNativeManager
 import com.v2ray.ang.dto.LogFileInfo
 import com.v2ray.ang.enums.PingType
 import com.v2ray.ang.extension.toTrafficString
@@ -57,6 +59,7 @@ import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.root.RootManager
 import com.v2ray.ang.ui.base.BaseComponentActivity
+import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.PreferenceGroupHeader
 import com.v2ray.ang.ui.compose.glassBackdropSource
@@ -66,6 +69,7 @@ import com.v2ray.ang.ui.compose.SettingsCategoryItem
 import com.v2ray.ang.ui.compose.SettingsEditItem
 import com.v2ray.ang.ui.compose.SettingsFileItem
 import com.v2ray.ang.ui.compose.SettingsGroupCard
+import com.v2ray.ang.ui.compose.SettingsInfoItem
 import com.v2ray.ang.ui.compose.SettingsListItem
 import com.v2ray.ang.ui.compose.SettingsMenuItem
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
@@ -75,6 +79,8 @@ import com.v2ray.ang.ui.main.GlassBarItem
 import com.v2ray.ang.ui.main.LiquidGlassBar
 import com.v2ray.ang.ui.logcat.LogFileActivity
 import com.v2ray.ang.ui.logcat.LogcatActivity
+import com.v2ray.ang.util.DeviceInfo
+import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.Utils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -145,7 +151,8 @@ enum class SettingsCategory(
     FRAGMENT(R.string.title_fragment_settings, R.string.summary_settings_fragment),
     OBSERVATORY(R.string.title_observatory_settings, R.string.summary_settings_observatory),
     LOGS(R.string.title_log_settings, R.string.summary_settings_logs),
-    ADVANCED(R.string.title_advanced, R.string.summary_settings_advanced)
+    ADVANCED(R.string.title_advanced, R.string.summary_settings_advanced),
+    INFO(R.string.title_info_settings, R.string.summary_settings_info)
 }
 
 private data class SettingsSection(
@@ -168,7 +175,7 @@ private val settingsSections = listOf(
     ),
     SettingsSection(
         R.string.title_settings_section_other,
-        listOf(SettingsCategory.LOGS, SettingsCategory.ADVANCED)
+        listOf(SettingsCategory.LOGS, SettingsCategory.ADVANCED, SettingsCategory.INFO)
     )
 )
 
@@ -250,6 +257,7 @@ fun SettingsScreen(
                 SettingsCategory.OBSERVATORY -> ObservatorySettings(modifier, viewModel)
                 SettingsCategory.LOGS -> LogSettings(modifier)
                 SettingsCategory.ADVANCED -> AdvancedSettings(modifier)
+                SettingsCategory.INFO -> InfoSettings(modifier)
             }
         }
     }
@@ -827,6 +835,91 @@ private fun ObservatorySettings(modifier: Modifier, viewModel: SettingsViewModel
                 }
             }
         )
+    }
+}
+
+/**
+ * Справочный экран: что за сборка, какое ядро и на чём всё это работает.
+ * Значения только читаются, по нажатию строка копируется в буфер.
+ */
+@Composable
+private fun InfoSettings(modifier: Modifier) {
+    val context = LocalContext.current
+    val copiedText = stringResource(R.string.toast_copied)
+
+    val copy: (String, String) -> Unit = { label, value ->
+        Utils.setClipboard(context, value)
+        AppSnackbarManager.show("$copiedText: $label")
+    }
+
+    SettingsColumn(modifier, grouped = false) {
+        PreferenceGroupHeader(title = stringResource(R.string.title_info_about))
+        SettingsGroupCard {
+            val appName = stringResource(R.string.app_name)
+            val appVersion = "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})"
+            val coreVersion = remember { CoreNativeManager.getLibVersion() }
+            val build = "${BuildConfig.DISTRIBUTION} / ${BuildConfig.BUILD_TYPE}"
+            val userAgent = remember { HttpUtil.defaultUserAgent() }
+
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_app_name),
+                value = appName,
+                onClick = { copy(appName, appName) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_app_version),
+                value = appVersion,
+                onClick = { copy(appName, appVersion) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_core_version),
+                value = coreVersion,
+                onClick = { copy("Xray", coreVersion) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_build),
+                value = build,
+                onClick = { copy("build", build) }
+            )
+            // Панели выбирают формат выдачи по этой строке - полезно видеть её целиком
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_user_agent),
+                value = userAgent,
+                onClick = { copy("User-Agent", userAgent) }
+            )
+        }
+
+        PreferenceGroupHeader(title = stringResource(R.string.title_info_device))
+        SettingsGroupCard {
+            val android = "${DeviceInfo.osVersion} (API ${DeviceInfo.sdkInt})"
+            val model = DeviceInfo.model
+            val abi = DeviceInfo.abi
+            val hwid = remember { DeviceInfo.hwid() }
+
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_android_version),
+                value = android,
+                onClick = { copy("Android", android) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_device_model),
+                value = model,
+                onClick = { copy("model", model) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_device_abi),
+                value = abi,
+                onClick = { copy("ABI", abi) }
+            )
+            SettingsInfoItem(
+                title = stringResource(R.string.title_info_hwid),
+                value = hwid,
+                summary = stringResource(R.string.summary_info_hwid),
+                onClick = { copy("HWID", hwid) }
+            )
+        }
+
+        Spacer(modifier = Modifier.height(24.dp))
     }
 }
 

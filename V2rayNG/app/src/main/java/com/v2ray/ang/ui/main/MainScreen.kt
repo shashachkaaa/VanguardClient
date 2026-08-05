@@ -680,9 +680,12 @@ private fun ActionChip(
         label = "chipScale"
     )
 
+    // Подложка держится на акценте: на чёрной теме серый контейнер сливался с фоном
+    // до полной невидимости, и чип читался как просто текст, а не как кнопка
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
         modifier = modifier
             .scale(scale)
             .clickable(
@@ -693,7 +696,7 @@ private fun ActionChip(
     ) {
         Text(
             text = text,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.primary,
             fontSize = 12.sp,
             fontWeight = FontWeight.SemiBold,
             textAlign = TextAlign.Center,

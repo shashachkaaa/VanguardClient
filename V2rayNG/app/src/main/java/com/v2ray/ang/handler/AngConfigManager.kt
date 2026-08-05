@@ -3,7 +3,6 @@ package com.v2ray.ang.handler
 import android.content.Context
 import android.graphics.Bitmap
 import android.text.TextUtils
-import android.provider.Settings
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreConfigManager
@@ -23,6 +22,7 @@ import com.v2ray.ang.fmt.V2rayNFmt
 import com.v2ray.ang.fmt.VlessFmt
 import com.v2ray.ang.fmt.VmessFmt
 import com.v2ray.ang.fmt.WireguardFmt
+import com.v2ray.ang.util.DeviceInfo
 import com.v2ray.ang.util.HttpUtil
 import com.v2ray.ang.util.JsonUtil
 import com.v2ray.ang.util.LogUtil
@@ -589,21 +589,8 @@ object AngConfigManager {
             }
 
             // --- ДОБАВЛЕНИЕ HWID И ДАННЫХ УСТРОЙСТВА В ЗАГОЛОВКИ ДЛЯ Remnawave ---
-            var hwid = "unknown_hwid"
-            try {
-                val context = Class.forName("android.app.ActivityThread")
-                    .getMethod("currentApplication")
-                    .invoke(null) as? android.content.Context
-                
-                if (context != null) {
-                    hwid = android.provider.Settings.Secure.getString(
-                        context.contentResolver,
-                        android.provider.Settings.Secure.ANDROID_ID
-                    ) ?: "unknown_hwid"
-                }
-            } catch (e: Exception) {
-                LogUtil.e(AppConfig.TAG, "Failed to get HWID for headers", e)
-            }
+            // Тот же HWID показывается в настройках - см. DeviceInfo
+            val hwid = DeviceInfo.hwid()
 
             // Собираем заголовки в Map, учитывая уже существующие
             val headersMap = mutableMapOf<String, String>()
@@ -624,8 +611,8 @@ object AngConfigManager {
             // x-ver-os панель показывает как «версия ОС»: без него там «Неизвестно»
             headersMap["x-hwid"] = hwid
             headersMap["x-device-os"] = "Android"
-            headersMap["x-ver-os"] = android.os.Build.VERSION.RELEASE ?: android.os.Build.VERSION.SDK_INT.toString()
-            headersMap["x-device-model"] = android.os.Build.MODEL ?: "Android"
+            headersMap["x-ver-os"] = DeviceInfo.osVersion
+            headersMap["x-device-model"] = DeviceInfo.model
             headersMap["x-user-agent"] = HttpUtil.clientUserAgent()
 
             // Переводим обратно в JSON-строку, которую ожидает UrlContentRequest

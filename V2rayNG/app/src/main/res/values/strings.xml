@@ -164,6 +164,21 @@
     <string name="app_picker_unknown_app">Unknown app (unidentified UID)</string>
 
     <!-- Preferences -->
+    <string name="title_info_settings">Information</string>
+    <string name="summary_settings_info">App, core and device details</string>
+    <string name="title_info_about">About the app</string>
+    <string name="title_info_device">Device</string>
+    <string name="title_info_app_name">Name</string>
+    <string name="title_info_app_version">App version</string>
+    <string name="title_info_core_version">Core version</string>
+    <string name="title_info_build">Build</string>
+    <string name="title_info_user_agent">Subscription User-Agent</string>
+    <string name="title_info_android_version">Android version</string>
+    <string name="title_info_device_model">Model</string>
+    <string name="title_info_device_abi">Architecture</string>
+    <string name="title_info_hwid">HWID</string>
+    <string name="summary_info_hwid">Sent to the subscription panel as x-hwid</string>
+    <string name="toast_copied">Copied to clipboard</string>
     <string name="title_settings">Settings</string>
     <string name="title_settings_section_general">General</string>
     <string name="title_settings_section_connection">Connection</string>

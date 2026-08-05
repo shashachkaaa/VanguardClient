@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -36,6 +37,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -174,6 +176,40 @@ private fun SettingsItemRow(
         }
         trailing?.invoke()
     }
+}
+
+/**
+ * Строка «название - значение» только для чтения. По нажатию значение можно скопировать:
+ * то же HWID руками не перепишешь.
+ */
+@Composable
+fun SettingsInfoItem(
+    title: String,
+    value: String,
+    modifier: Modifier = Modifier,
+    summary: String? = null,
+    onClick: (() -> Unit)? = null
+) {
+    SettingsItemRow(
+        icon = null,
+        title = title,
+        description = summary,
+        enabled = true,
+        onClick = onClick,
+        modifier = modifier,
+        trailing = {
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.End,
+                modifier = Modifier
+                    .padding(start = 16.dp)
+                    .widthIn(max = 190.dp)
+            )
+        }
+    )
 }
 
 /**

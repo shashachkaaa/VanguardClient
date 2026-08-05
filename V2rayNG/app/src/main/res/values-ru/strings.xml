@@ -163,6 +163,21 @@
     <string name="app_picker_unknown_app">Неизвестное приложение (неопознанный UID)</string>
 
     <!-- Preferences -->
+    <string name="title_info_settings">Информация</string>
+    <string name="summary_settings_info">Данные о приложении, ядре и устройстве</string>
+    <string name="title_info_about">О приложении</string>
+    <string name="title_info_device">Устройство</string>
+    <string name="title_info_app_name">Название</string>
+    <string name="title_info_app_version">Версия приложения</string>
+    <string name="title_info_core_version">Версия ядра</string>
+    <string name="title_info_build">Сборка</string>
+    <string name="title_info_user_agent">User-Agent подписок</string>
+    <string name="title_info_android_version">Версия Android</string>
+    <string name="title_info_device_model">Модель</string>
+    <string name="title_info_device_abi">Архитектура</string>
+    <string name="title_info_hwid">HWID</string>
+    <string name="summary_info_hwid">Уходит панели подписки в заголовке x-hwid</string>
+    <string name="toast_copied">Скопировано в буфер обмена</string>
     <string name="title_settings">Настройки</string>
     <string name="title_settings_section_general">Основное</string>
     <string name="title_settings_section_connection">Соединение</string>
