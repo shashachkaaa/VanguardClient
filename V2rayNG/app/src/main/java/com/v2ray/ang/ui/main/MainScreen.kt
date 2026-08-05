@@ -39,6 +39,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -218,12 +219,12 @@ fun MainScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     ActionChip(
-                        text = "Проверить подключение",
+                        text = stringResource(R.string.main_action_test),
                         modifier = Modifier.weight(1f),
                         onClick = { onAction(MainAction.TestCurrentServer) }
                     )
                     ActionChip(
-                        text = if (allCollapsed) "Показать все" else "Скрыть все",
+                        text = stringResource(if (allCollapsed) R.string.main_action_expand_all else R.string.main_action_collapse_all),
                         onClick = {
                             collapsedGuids = if (allCollapsed) {
                                 emptyList()
@@ -245,7 +246,7 @@ fun MainScreen(
                             )
                             Spacer(Modifier.height(16.dp))
                             Text(
-                                text = "Нет добавленных профилей.\nНажмите '+' чтобы импортировать подписку.",
+                                text = stringResource(R.string.main_empty_profiles),
                                 textAlign = TextAlign.Center,
                                 color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f), // ДИНАМИЧЕСКИЙ СЕРЫЙ
                                 fontSize = 14.sp,
@@ -362,7 +363,7 @@ fun MainScreen(
 
         TopProgressBanner(
             visible = isImporting,
-            text = "Обновление подписки...",
+            text = stringResource(R.string.main_updating_subscription),
             modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp)
         )
 
@@ -583,10 +584,10 @@ private fun PowerButton(
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = when {
-                        isConnecting && !isConnected -> "ПОДКЛЮЧЕНИЕ"
-                        isConnecting && isConnected -> "ОТКЛЮЧЕНИЕ"
-                        isConnected -> "ПОДКЛЮЧЕН"
-                        else -> "ОТКЛЮЧЕН"
+                        isConnecting && !isConnected -> stringResource(R.string.main_state_connecting)
+                        isConnecting && isConnected -> stringResource(R.string.main_state_disconnecting)
+                        isConnected -> stringResource(R.string.main_state_connected)
+                        else -> stringResource(R.string.main_state_disconnected)
                     },
                     color = scheme.onSurfaceVariant,
                     fontSize = 12.sp,
@@ -754,15 +755,15 @@ private fun ImportSheet(
                         .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f))
                 )
                 Text(
-                    text = "Добавить серверы",
+                    text = stringResource(R.string.main_add_servers),
                     color = MaterialTheme.colorScheme.onSurface,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
                 )
-                ImportSheetItem("Импорт из буфера", R.drawable.ic_copy) { onAction(MainAction.ImportClipboard) }
-                ImportSheetItem("Сканировать QR", R.drawable.ic_qu_scan_24dp) { onAction(MainAction.ImportQRcode) }
-                ImportSheetItem("Импорт из файла", R.drawable.ic_file_24dp) { onAction(MainAction.ImportConfigLocal) }
+                ImportSheetItem(stringResource(R.string.main_import_clipboard), R.drawable.ic_copy) { onAction(MainAction.ImportClipboard) }
+                ImportSheetItem(stringResource(R.string.main_import_qr), R.drawable.ic_qu_scan_24dp) { onAction(MainAction.ImportQRcode) }
+                ImportSheetItem(stringResource(R.string.main_import_file), R.drawable.ic_file_24dp) { onAction(MainAction.ImportConfigLocal) }
             }
         }
     }

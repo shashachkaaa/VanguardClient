@@ -163,6 +163,36 @@
     <string name="per_app_proxy_settings_enable">Enable per-app</string>
     <string name="app_picker_unknown_app">Unknown app (unidentified UID)</string>
 
+    <string name="main_never">Never</string>
+    <string name="main_untitled">Untitled</string>
+    <string name="main_update_failed">Update failed</string>
+    <string name="main_updating_subscription">Updating subscription…</string>
+    <string name="main_state_connecting">CONNECTING</string>
+    <string name="main_state_disconnecting">DISCONNECTING</string>
+    <string name="main_state_connected">CONNECTED</string>
+    <string name="main_state_disconnected">DISCONNECTED</string>
+    <string name="main_action_test">Check connection</string>
+    <string name="main_action_collapse_all">Collapse all</string>
+    <string name="main_action_expand_all">Expand all</string>
+    <string name="main_empty_profiles">No profiles yet.\nTap \'+\' to import a subscription.</string>
+    <string name="main_add_servers">Add servers</string>
+    <string name="main_share_link">Share link</string>
+    <string name="main_share_qr">QR code</string>
+    <string name="main_menu">Menu</string>
+    <string name="main_nav_home">Home</string>
+    <string name="main_nav_settings">Settings</string>
+    <string name="main_nav_add">Add</string>
+    <string name="main_expires">Expires: %1$s</string>
+    <string name="main_link_unavailable">Link is unavailable</string>
+    <string name="main_sub_no_url">The subscription has no URL</string>
+    <string name="main_ping_timeout">timeout</string>
+    <string name="main_ping_failed_count">No answer: %1$d of %2$d</string>
+    <string name="main_ping_failed_count_reason">No answer: %1$d of %2$d — %3$s</string>
+    <string name="main_clipboard_empty">Clipboard is empty or has no configs</string>
+    <string name="main_import_failed">Failed: %1$s</string>
+    <string name="main_import_clipboard">Import from clipboard</string>
+    <string name="main_import_qr">Scan QR code</string>
+    <string name="main_import_file">Import from file</string>
     <!-- Preferences -->
     <string name="title_info_commit">Build commit</string>
     <string name="title_info_url_schemes">URL schemes</string>

@@ -41,6 +41,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -101,8 +102,8 @@ fun WireframeGlobe(color: Color, modifier: Modifier = Modifier) {
 }
 
 // Форматер даты
-fun formatDate(millis: Long, format: String = "dd.MM.yyyy"): String {
-    if (millis <= 0L) return "Никогда"
+fun formatDate(millis: Long, format: String = "dd.MM.yyyy", fallback: String = ""): String {
+    if (millis <= 0L) return fallback
     val formatter = SimpleDateFormat(format, Locale.getDefault())
     return formatter.format(Date(millis))
 }
@@ -191,8 +192,8 @@ fun ProfileCard(
 
     val sub = subscription.subscription
 
-    val title = sub.remarks.takeIf { !it.isNullOrBlank() } ?: "Без названия"
-    val lastUpdateStr = formatDate(sub.lastUpdated, "dd.MM.yyyy HH:mm")
+    val title = sub.remarks.takeIf { !it.isNullOrBlank() } ?: stringResource(R.string.main_untitled)
+    val lastUpdateStr = formatDate(sub.lastUpdated, "dd.MM.yyyy HH:mm", stringResource(R.string.main_never))
     val intervalHours = sub.updateInterval / 60
     val updateStatus = "- $intervalHours ч. $lastUpdateStr"
 
@@ -203,7 +204,10 @@ fun ProfileCard(
     val trafficDisplay = "$usedStr/$totalStr"
 
     val expireMillis = if (sub.trafficExpire > 9999999999L) sub.trafficExpire else sub.trafficExpire * 1000
-    val expireDisplay = if (expireMillis > 0L) "Истекает: ${formatDate(expireMillis)}" else "Истекает: ∞"
+    val expireDisplay = stringResource(
+        R.string.main_expires,
+        if (expireMillis > 0L) formatDate(expireMillis) else "∞"
+    )
 
     val announceText = sub.announce ?: ""
     val supportUrl = sub.supportUrl ?: ""
@@ -278,7 +282,7 @@ fun ProfileCard(
                             modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
                         ) {
                             IconButton(onClick = { onUpdateSubscription(subscription.guid) }, modifier = Modifier.size(28.dp)) {
-                                Icon(painterResource(id = R.drawable.ic_restore_24dp), contentDescription = "Обновить", tint = MaterialTheme.colorScheme.primary)
+                                Icon(painterResource(id = R.drawable.ic_restore_24dp), contentDescription = stringResource(R.string.title_sub_update), tint = MaterialTheme.colorScheme.primary)
                             }
                             Spacer(Modifier.width(10.dp))
                             IconButton(onClick = { onPingProfile(subscription.guid) }, modifier = Modifier.size(28.dp)) {
@@ -291,7 +295,7 @@ fun ProfileCard(
 
                     Box {
                         IconButton(onClick = { showMenu = true }, modifier = Modifier.size(28.dp)) {
-                            Icon(painterResource(id = R.drawable.ic_more_vert_24dp), contentDescription = "Меню", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Icon(painterResource(id = R.drawable.ic_more_vert_24dp), contentDescription = stringResource(R.string.main_menu), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                         // Меню - отдельное окно, оно уже вне записи слоя, поэтому размытие настоящее
                         DropdownMenu(
@@ -303,14 +307,14 @@ fun ProfileCard(
                             modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Редактировать", color = MaterialTheme.colorScheme.onSurface) },
+                                text = { Text(stringResource(R.string.action_edit), color = MaterialTheme.colorScheme.onSurface) },
                                 onClick = {
                                     showMenu = false
                                     context.startActivity(Intent(context, SubEditActivity::class.java).putExtra("subId", subscription.guid))
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
+                                text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                                 onClick = {
                                     showMenu = false
                                     onDeleteSubscription(subscription.guid)
@@ -333,8 +337,8 @@ fun ProfileCard(
                     IconButton(
                         onClick = {
                             val subUrl = sub.url
-                            if (!subUrl.isNullOrBlank()) try { uriHandler.openUri(subUrl) } catch(e: Exception) { Toast.makeText(context, "Ссылка недоступна", Toast.LENGTH_SHORT).show() }
-                            else Toast.makeText(context, "В подписке нет URL", Toast.LENGTH_SHORT).show()
+                            if (!subUrl.isNullOrBlank()) try { uriHandler.openUri(subUrl) } catch(e: Exception) { Toast.makeText(context, R.string.main_link_unavailable, Toast.LENGTH_SHORT).show() }
+                            else Toast.makeText(context, R.string.main_sub_no_url, Toast.LENGTH_SHORT).show()
                         }, 
                         modifier = Modifier.size(20.dp)
                     ) {
@@ -544,7 +548,7 @@ fun ProfileCard(
 
                     Column(Modifier.weight(1f)) {
                         Text(
-                            text = serverCache.profile.remarks ?: "Без названия",
+                            text = serverCache.profile.remarks ?: stringResource(R.string.main_untitled),
                             fontWeight = FontWeight.ExtraBold,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -572,7 +576,7 @@ fun ProfileCard(
                             else -> Color(0xFFF59E0B)
                         }
                         Text(
-                            text = if (delay > 0L) "$delay ms" else "таймаут",
+                            text = if (delay > 0L) "$delay ms" else stringResource(R.string.main_ping_timeout),
                             style = MaterialTheme.typography.labelMedium,
                             color = pingColor,
                             fontWeight = FontWeight.Bold,
@@ -604,21 +608,21 @@ fun ProfileCard(
                 modifier = Modifier.glassPanel(GlassMenuShape)
             ) {
                 DropdownMenuItem(
-                    text = { Text("Поделиться ссылкой", color = MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(stringResource(R.string.main_share_link), color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         showServerMenu = false
                         onAction(MainAction.ShareClipboard(serverCache.guid))
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("QR-код", color = MaterialTheme.colorScheme.onSurface) },
+                    text = { Text(stringResource(R.string.main_share_qr), color = MaterialTheme.colorScheme.onSurface) },
                     onClick = {
                         showServerMenu = false
                         onAction(MainAction.ShareQRCode(serverCache.guid))
                     }
                 )
                 DropdownMenuItem(
-                    text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
+                    text = { Text(stringResource(R.string.action_delete), color = MaterialTheme.colorScheme.error) },
                     onClick = {
                         showServerMenu = false
                         confirmDelete = true

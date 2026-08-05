@@ -236,9 +236,9 @@ class MainViewModel(
                 if (failedCount > 0) {
                     val reason = PingManager.consumeLastError()
                     importError.value = if (reason != null) {
-                        "Без ответа: $failedCount из ${guids.size} — $reason"
+                        dataSource.getString(R.string.main_ping_failed_count_reason, failedCount, guids.size, reason)
                     } else {
-                        "Без ответа: $failedCount из ${guids.size}"
+                        dataSource.getString(R.string.main_ping_failed_count, failedCount, guids.size)
                     }
                 }
 
@@ -508,7 +508,7 @@ class MainViewModel(
                     if (countSub > 0 || isUrl) {
                         dataSource.updateConfigViaSubAll()
                     } else if (count == 0) {
-                        importError.value = "Буфер обмена пуст или не содержит конфигураций"
+                        importError.value = dataSource.getString(R.string.main_clipboard_empty)
                     }
                     
                     setupGroupTab(forceRefresh = true).join()
@@ -519,7 +519,7 @@ class MainViewModel(
                     throw cancelled
                 } catch (e: Exception) {
                     LogUtil.e(AppConfig.TAG, "Failed to import batch config", e)
-                    importError.value = "Сбой: ${e.localizedMessage}"
+                    importError.value = dataSource.getString(R.string.main_import_failed, e.localizedMessage ?: "")
                 } finally {
                     isImporting.value = false
                 }
@@ -537,7 +537,7 @@ class MainViewModel(
                     dataSource.updateConfigViaSub(SubscriptionCache(subId, item))
                     setupGroupTab(forceRefresh = true).join()
                 } catch (e: Exception) {
-                    importError.value = "Сбой обновления"
+                    importError.value = dataSource.getString(R.string.main_update_failed)
                 } finally {
                     isImporting.value = false
                 }

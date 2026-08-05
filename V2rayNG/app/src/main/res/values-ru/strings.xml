@@ -162,6 +162,36 @@
     <string name="per_app_proxy_settings_enable">Использовать выбор приложений</string>
     <string name="app_picker_unknown_app">Неизвестное приложение (неопознанный UID)</string>
 
+    <string name="main_never">Никогда</string>
+    <string name="main_untitled">Без названия</string>
+    <string name="main_update_failed">Сбой обновления</string>
+    <string name="main_updating_subscription">Обновление подписки…</string>
+    <string name="main_state_connecting">ПОДКЛЮЧЕНИЕ</string>
+    <string name="main_state_disconnecting">ОТКЛЮЧЕНИЕ</string>
+    <string name="main_state_connected">ПОДКЛЮЧЕН</string>
+    <string name="main_state_disconnected">ОТКЛЮЧЕН</string>
+    <string name="main_action_test">Проверить подключение</string>
+    <string name="main_action_collapse_all">Скрыть все</string>
+    <string name="main_action_expand_all">Показать все</string>
+    <string name="main_empty_profiles">Нет добавленных профилей.\nНажмите \'+\' чтобы импортировать подписку.</string>
+    <string name="main_add_servers">Добавить серверы</string>
+    <string name="main_share_link">Поделиться ссылкой</string>
+    <string name="main_share_qr">QR-код</string>
+    <string name="main_menu">Меню</string>
+    <string name="main_nav_home">Главная</string>
+    <string name="main_nav_settings">Настройки</string>
+    <string name="main_nav_add">Добавить</string>
+    <string name="main_expires">Истекает: %1$s</string>
+    <string name="main_link_unavailable">Ссылка недоступна</string>
+    <string name="main_sub_no_url">В подписке нет URL</string>
+    <string name="main_ping_timeout">таймаут</string>
+    <string name="main_ping_failed_count">Без ответа: %1$d из %2$d</string>
+    <string name="main_ping_failed_count_reason">Без ответа: %1$d из %2$d — %3$s</string>
+    <string name="main_clipboard_empty">Буфер обмена пуст или не содержит конфигураций</string>
+    <string name="main_import_failed">Сбой: %1$s</string>
+    <string name="main_import_clipboard">Импорт из буфера</string>
+    <string name="main_import_qr">Сканировать QR</string>
+    <string name="main_import_file">Импорт из файла</string>
     <!-- Preferences -->
     <string name="title_info_commit">Коммит сборки</string>
     <string name="title_info_url_schemes">URL-схемы</string>

@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.GlassBackdrop
@@ -154,14 +155,14 @@ private fun GlassBarButton(
             GlassBarItem.HOME -> HomeIcon(color = tint, modifier = Modifier.size(26.dp))
             GlassBarItem.SETTINGS -> Icon(
                 painter = painterResource(R.drawable.ic_settings_24dp),
-                contentDescription = "Настройки",
+                contentDescription = stringResource(R.string.main_nav_settings),
                 tint = tint,
                 modifier = Modifier.size(26.dp)
             )
 
             GlassBarItem.ADD -> Icon(
                 painter = painterResource(R.drawable.ic_add_24dp),
-                contentDescription = "Добавить",
+                contentDescription = stringResource(R.string.main_nav_add),
                 tint = tint,
                 modifier = Modifier.size(28.dp)
             )
