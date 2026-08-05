@@ -6,6 +6,10 @@ on:
       release_tag:
         required: false
         type: string
+      release_notes:
+        description: Описание релиза
+        required: false
+        type: string
   push:
     branches:
       - master
@@ -239,3 +243,4 @@ jobs:
           # в названии релиза и в описании
           prerelease: false
           release_name: Ward ${{ inputs.release_tag }} (beta)
+          body: ${{ inputs.release_notes }}
