@@ -286,9 +286,14 @@ object HttpUtil {
         }
     }
 
+    /**
+     * @param onProgress Доля скачанного от 0 до 100. Вызывается, только если сервер
+     * сообщил размер: без него проценты считать не из чего.
+     */
     fun downloadToFile(
         request: UrlContentRequest,
-        targetFile: File
+        targetFile: File,
+        onProgress: ((Int) -> Unit)? = null
     ): Boolean {
         val url = request.url ?: return false
         val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = true)
@@ -307,9 +312,25 @@ object HttpUtil {
                     return false
                 }
                 val body = response.body ?: return false
+                val total = body.contentLength()
                 body.byteStream().use { input ->
                     targetFile.outputStream().use { output ->
-                        input.copyTo(output)
+                        val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                        var copied = 0L
+                        var lastPercent = -1
+                        while (true) {
+                            val read = input.read(buffer)
+                            if (read <= 0) break
+                            output.write(buffer, 0, read)
+                            copied += read
+                            if (onProgress != null && total > 0) {
+                                val percent = (copied * 100 / total).toInt()
+                                if (percent != lastPercent) {
+                                    lastPercent = percent
+                                    onProgress(percent)
+                                }
+                            }
+                        }
                     }
                 }
                 true

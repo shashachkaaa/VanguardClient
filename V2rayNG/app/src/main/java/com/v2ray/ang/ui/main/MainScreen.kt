@@ -66,6 +66,10 @@ import com.v2ray.ang.handler.TrafficSpeedState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.LocalContext
+import com.v2ray.ang.handler.AppUpdateInstaller
+import com.v2ray.ang.handler.UpdateInstallState
+import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.ui.compose.GlassSurface
 import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ResumePauseEffect
@@ -199,6 +203,26 @@ fun MainScreen(
     val pinnedGuids by mainViewModel.pinnedGuids.collectAsStateWithLifecycle()
 
     val availableUpdate by mainViewModel.availableUpdate.collectAsStateWithLifecycle()
+    val installState by AppUpdateInstaller.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    // Установка запрещена системой - ведём в настройки, где её разрешают
+    LaunchedEffect(installState) {
+        when (installState) {
+            is UpdateInstallState.NeedsPermission -> {
+                AppSnackbarManager.show(context.getString(R.string.update_needs_permission))
+                runCatching { context.startActivity(AppUpdateInstaller.permissionIntent(context)) }
+                AppUpdateInstaller.reset()
+            }
+
+            is UpdateInstallState.Failed -> {
+                AppSnackbarManager.show(context.getString(R.string.update_failed))
+                AppUpdateInstaller.reset()
+            }
+
+            else -> Unit
+        }
+    }
 
     // Поиск: строка появляется по чипу и фильтрует все списки разом
     var searchVisible by rememberSaveable { mutableStateOf(false) }
@@ -283,9 +307,9 @@ fun MainScreen(
 
                 UpdateBanner(
                     version = availableUpdate?.latestVersion,
+                    installState = installState,
                     onUpdate = {
-                        availableUpdate?.downloadUrl?.let { uriHandler.openUri(it) }
-                        mainViewModel.dismissUpdate()
+                        mainViewModel.startUpdate(onFallback = { url -> uriHandler.openUri(url) })
                     },
                     onDismiss = { mainViewModel.dismissUpdate() }
                 )
@@ -599,9 +623,12 @@ private fun TopProgressBanner(
 @Composable
 private fun UpdateBanner(
     version: String?,
+    installState: UpdateInstallState,
     onUpdate: () -> Unit,
     onDismiss: () -> Unit
 ) {
+    val busy = installState is UpdateInstallState.Downloading ||
+            installState is UpdateInstallState.Installing
     AnimatedVisibility(
         visible = version != null,
         enter = fadeIn(tween(300)) + expandVertically(tween(300)),
@@ -628,27 +655,47 @@ private fun UpdateBanner(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        text = stringResource(R.string.update_available_text),
+                        text = when (val state = installState) {
+                            is UpdateInstallState.Downloading ->
+                                stringResource(R.string.update_downloading, state.percent)
+
+                            is UpdateInstallState.Installing ->
+                                stringResource(R.string.update_installing)
+
+                            else -> stringResource(R.string.update_available_text)
+                        },
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Medium
                     )
                 }
-                TextButton(onClick = onDismiss) {
-                    Text(
-                        text = stringResource(R.string.update_later),
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-                TextButton(onClick = onUpdate) {
-                    Text(
-                        text = stringResource(R.string.update_now),
+
+                // Пока идёт загрузка, кнопки прячем: нажимать второй раз нечего
+                if (busy) {
+                    CircularProgressIndicator(
                         color = MaterialTheme.colorScheme.primary,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        strokeWidth = 2.dp,
+                        modifier = Modifier
+                            .padding(end = 12.dp)
+                            .size(18.dp)
                     )
+                } else {
+                    TextButton(onClick = onDismiss) {
+                        Text(
+                            text = stringResource(R.string.update_later),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    TextButton(onClick = onUpdate) {
+                        Text(
+                            text = stringResource(R.string.update_now),
+                            color = MaterialTheme.colorScheme.primary,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }

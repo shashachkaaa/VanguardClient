@@ -41,9 +41,9 @@ class CheckUpdateViewModel(application: Application) : BaseViewModel(application
         _autoCheck.value = enabled
         MmkvManager.encodeSettings(AppConfig.PREF_AUTO_CHECK_UPDATE, enabled)
         if (enabled) {
-            AppUpdateNotifier.schedule(getApplication())
+            AppUpdateNotifier.schedule(app)
         } else {
-            AppUpdateNotifier.cancel(getApplication())
+            AppUpdateNotifier.cancel(app)
         }
     }
 

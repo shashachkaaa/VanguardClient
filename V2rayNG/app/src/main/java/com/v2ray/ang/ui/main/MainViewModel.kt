@@ -15,7 +15,9 @@ import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.AppUpdateInstaller
 import com.v2ray.ang.handler.PingManager
+import com.v2ray.ang.handler.UpdateInstallState
 import com.v2ray.ang.handler.UpdateCheckerManager
 import com.v2ray.ang.handler.TrafficSpeedState
 import com.v2ray.ang.handler.SettingsManager
@@ -454,6 +456,21 @@ class MainViewModel(
             return
         }
         _availableUpdate.value = update
+    }
+
+    /**
+     * «Обновить»: качаем файл и отдаём системному установщику. Если это не вышло -
+     * возвращаем false, и экран предлагает открыть ссылку в браузере: остаться
+     * совсем без обновления человек не должен.
+     */
+    fun startUpdate(onFallback: (String) -> Unit) {
+        val url = _availableUpdate.value?.downloadUrl ?: return
+        viewModelScope.launch(ioDispatcher) {
+            val started = AppUpdateInstaller.downloadAndInstall(app, url)
+            if (!started && AppUpdateInstaller.state.value !is UpdateInstallState.NeedsPermission) {
+                withContext(Dispatchers.Main) { onFallback(url) }
+            }
+        }
     }
 
     /** «Позже»: прячем плашку до следующей версии. */

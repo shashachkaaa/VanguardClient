@@ -522,6 +522,10 @@
     <string name="update_available_title">Доступна версия %1$s</string>
     <string name="update_available_text">Нажмите, чтобы скачать новую сборку</string>
     <string name="update_later">Позже</string>
+    <string name="update_downloading">Загрузка… %1$d%%</string>
+    <string name="update_installing">Запускаем установщик…</string>
+    <string name="update_failed">Не удалось скачать обновление</string>
+    <string name="update_needs_permission">Разрешите Ward устанавливать приложения и нажмите «Обновить» ещё раз</string>
     <string name="update_auto_check">Проверять автоматически</string>
     <string name="update_auto_check_summary">Раз в сутки искать новую версию и сообщать о ней уведомлением</string>
     <string name="update_checking_for_update">Проверка обновления…</string>

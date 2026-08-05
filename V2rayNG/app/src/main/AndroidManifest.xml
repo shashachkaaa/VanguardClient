@@ -39,6 +39,8 @@
         android:minSdkVersion="34" />
     <!-- <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" /> -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Обновление ставится из самого приложения: файл уходит системному установщику -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -290,6 +292,11 @@
                 <action android:name="${applicationId}.action.activity" />
             </intent-filter>
         </receiver>
+        <!-- Ответ системного установщика на сессию обновления -->
+        <receiver
+            android:name=".receiver.UpdateInstallReceiver"
+            android:exported="false" />
+
         <receiver
             android:name=".receiver.BootReceiver"
             android:exported="true"
