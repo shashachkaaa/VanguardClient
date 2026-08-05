@@ -10,7 +10,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.vanguard.client"
+        applicationId = "com.ward.client"
         minSdk = 24
         targetSdk = 37
         versionCode = 741

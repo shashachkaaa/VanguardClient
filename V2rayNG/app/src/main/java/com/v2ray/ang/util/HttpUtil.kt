@@ -147,7 +147,7 @@ object HttpUtil {
      * по которому панель показывает устройство в списке. На формат выдачи не влияет.
      */
     fun clientUserAgent(): String =
-        "VanguardClient/${BuildConfig.VERSION_NAME} (Android ${android.os.Build.VERSION.RELEASE})"
+        "Ward/${BuildConfig.VERSION_NAME} (Android ${android.os.Build.VERSION.RELEASE})"
 
     /**
      * Retrieves the content of a URL as a string with a custom User-Agent header.

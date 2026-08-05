@@ -1,13 +1,13 @@
 <p>An Android client for <a href="https://github.com/XTLS/Xray-core">Xray core</a> and <a href="https://github.com/v2fly/v2ray-core">v2fly core</a>, with a reworked interface.</p>
 
-<p><b>Vanguard Client is an independent fork of <a href="https://github.com/2dust/v2rayNG">v2rayNG</a>.</b> It is not affiliated with, endorsed by, or supported by the v2rayNG project. Please report issues with this fork on its own repository, not to the v2rayNG maintainers.</p>
+<p><b>Ward is an independent fork of <a href="https://github.com/2dust/v2rayNG">v2rayNG</a>.</b> It is not affiliated with, endorsed by, or supported by the v2rayNG project. Please report issues with this fork on its own repository, not to the v2rayNG maintainers.</p>
 
 <h3>Usage</h3>
 
 <h4>Geoip and Geosite</h4>
 
 <ul>
-<li>geoip.dat and geosite.dat files are in <code>Android/data/com.vanguard.client/files/assets</code> (path may differ on some Android device)</li>
+<li>geoip.dat and geosite.dat files are in <code>Android/data/com.ward.client/files/assets</code> (path may differ on some Android device)</li>
 <li>download feature will get enhanced version in this <a href="https://github.com/Loyalsoldier/v2ray-rules-dat">repo</a> (Note it need a working proxy)</li>
 <li>latest official <a href="https://github.com/v2fly/domain-list-community">domain list</a> and <a href="https://github.com/v2fly/geoip">ip list</a> can be imported manually</li>
 <li>possible to use third party dat file in the same folder, like <a href="https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6">h2y</a></li>

@@ -1,9 +1,9 @@
-# Vanguard Client
+# Ward
 
 An Android client for [Xray core](https://github.com/XTLS/Xray-core) and [v2fly core](https://github.com/v2fly/v2ray-core), with a reworked interface.
 
 > [!IMPORTANT]
-> **Vanguard Client is an independent fork of [2dust/v2rayNG](https://github.com/2dust/v2rayNG).**
+> **Ward is an independent fork of [2dust/v2rayNG](https://github.com/2dust/v2rayNG).**
 > It is not affiliated with, endorsed by, or supported by the v2rayNG project.
 > Please report issues with this fork here — **not** to the v2rayNG maintainers.
 
@@ -28,14 +28,14 @@ Everything else — the cores, the protocols, the config handling — comes from
 
 Builds are published in this repository's [Releases](https://github.com/shashachkaaa/VanguardClient/releases).
 
-Do not download Vanguard Client from the v2rayNG release page, and do not expect
+Do not download Ward from the v2rayNG release page, and do not expect
 v2rayNG releases to contain any of the changes listed above.
 
 ---
 
 ## Geoip and Geosite
 
-- `geoip.dat` and `geosite.dat` live in `Android/data/com.vanguard.client/files/assets` (the path may differ on some devices)
+- `geoip.dat` and `geosite.dat` live in `Android/data/com.ward.client/files/assets` (the path may differ on some devices)
 - the download feature fetches the enhanced version from [this repo](https://github.com/Loyalsoldier/v2ray-rules-dat) (it needs a working proxy)
 - the official [domain list](https://github.com/v2fly/domain-list-community) and [ip list](https://github.com/v2fly/geoip) can be imported manually
 - a third-party dat file can be used from the same folder, e.g. [h2y](https://guide.v2fly.org/routing/sitedata.html#%E5%A4%96%E7%BD%AE%E7%9A%84%E5%9F%9F%E5%90%8D%E6%96%87%E4%BB%B6)
@@ -52,7 +52,7 @@ v2rayNG releases to contain any of the changes listed above.
 
 ## Credits and license
 
-Vanguard Client is built on [v2rayNG](https://github.com/2dust/v2rayNG) by [2dust](https://github.com/2dust) and contributors, and on
+Ward is built on [v2rayNG](https://github.com/2dust/v2rayNG) by [2dust](https://github.com/2dust) and contributors, and on
 [Xray-core](https://github.com/XTLS/Xray-core) / [v2ray-core](https://github.com/v2fly/v2ray-core).
 
 Like v2rayNG, this project is licensed under the [GNU General Public License v3.0](LICENSE).
