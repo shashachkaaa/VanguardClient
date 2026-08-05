@@ -614,10 +614,6 @@ private fun PowerButton(
 }
 
 /**
- * Небольшой чип-действие: мягкая подложка, отклик на нажатие.
- */
-@Composable
-/**
  * Скорость под кнопкой: приходит из того же замера, что и уведомление.
  */
 @Composable
@@ -667,6 +663,9 @@ private fun SpeedValue(down: Boolean, value: Long) {
     }
 }
 
+/**
+ * Небольшой чип-действие: мягкая подложка, отклик на нажатие.
+ */
 @Composable
 private fun ActionChip(
     text: String,
