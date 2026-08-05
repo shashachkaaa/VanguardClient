@@ -45,6 +45,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import com.v2ray.ang.R
 import com.v2ray.ang.ui.compose.GlassSurface
+import com.v2ray.ang.ui.compose.ResumePauseEffect
 import com.v2ray.ang.ui.compose.LocalGlassBackdrop
 import com.v2ray.ang.ui.compose.glassBackdropSource
 import com.v2ray.ang.ui.compose.rememberGlassBackdrop
@@ -116,6 +117,32 @@ fun MainScreen(
     val minutes = (uptime / (1000 * 60)) % 60
     val hours = (uptime / (1000 * 60 * 60))
     val timeString = "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
+
+    // Пузырёк капсулы. Из настроек он должен приехать с шестерёнки, а не оказаться
+    // на «Главной» мгновенно, поэтому при возврате панель пересобирается уже с
+    // подсветкой на настройках, а следом уезжает на место
+    var barItem by remember { mutableStateOf(GlassBarItem.HOME) }
+    var barResetToken by remember { mutableIntStateOf(0) }
+    var leftForSettings by rememberSaveable { mutableStateOf(false) }
+
+    ResumePauseEffect(
+        onResume = {
+            if (leftForSettings) {
+                leftForSettings = false
+                barItem = GlassBarItem.SETTINGS
+                barResetToken++
+            }
+        },
+        onPause = {}
+    )
+
+    LaunchedEffect(barItem) {
+        if (barItem == GlassBarItem.SETTINGS) {
+            // Даём кроссфейду улечься, чтобы переезд было видно целиком
+            delay(140)
+            barItem = GlassBarItem.HOME
+        }
+    }
 
     // Свёрнутые карточки: «Скрыть все» прячет списки серверов, шапки остаются
     var collapsedGuids by rememberSaveable { mutableStateOf(listOf<String>()) }
@@ -270,21 +297,26 @@ fun MainScreen(
             }
         }
         
-        LiquidGlassBar(
-            backdrop = backdrop,
-            selected = GlassBarItem.HOME,
-            onSelect = { item ->
-                when (item) {
-                    GlassBarItem.HOME -> Unit
-                    GlassBarItem.SETTINGS -> onNavigate("settings")
-                    GlassBarItem.ADD -> mainViewModel.showImportSheet.value = true
-                }
-            },
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .navigationBarsPadding()
-                .padding(bottom = 18.dp)
-        )
+        key(barResetToken) {
+            LiquidGlassBar(
+                backdrop = backdrop,
+                selected = barItem,
+                onSelect = { item ->
+                    when (item) {
+                        GlassBarItem.HOME -> Unit
+                        GlassBarItem.SETTINGS -> {
+                            leftForSettings = true
+                            onNavigate("settings")
+                        }
+                        GlassBarItem.ADD -> mainViewModel.showImportSheet.value = true
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 18.dp)
+            )
+        }
 
         if (showImportMenu) {
             ImportSheet(
