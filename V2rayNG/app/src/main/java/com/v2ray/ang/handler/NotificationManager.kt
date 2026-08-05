@@ -271,7 +271,8 @@ object NotificationManager {
                 proxyDown = (proxyDownlink / sinceLastQueryInSeconds).toLong(),
                 directUp = (directUplink / sinceLastQueryInSeconds).toLong(),
                 directDown = (directDownlink / sinceLastQueryInSeconds).toLong()
-            )
+            ),
+            intervalSeconds = sinceLastQueryInSeconds
         )
 
         if (!zeroSpeed || !lastZeroSpeed) {

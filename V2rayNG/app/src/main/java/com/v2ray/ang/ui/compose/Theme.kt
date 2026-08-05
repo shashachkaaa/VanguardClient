@@ -1,11 +1,14 @@
 package com.v2ray.ang.ui.compose
 
 import android.app.Activity
+import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
+import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -15,6 +18,7 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 import com.v2ray.ang.AppConfig
@@ -128,14 +132,27 @@ object ThemeManager {
     )
     val themeMode: StateFlow<String> = _themeMode.asStateFlow()
 
+    private val _dynamicColor = MutableStateFlow(
+        MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, false)
+    )
+
+    /** Брать ли палитру из обоев системы (Android 12+). */
+    val dynamicColor: StateFlow<Boolean> = _dynamicColor.asStateFlow()
+
     fun setThemeMode(mode: String) {
         MmkvManager.encodeSettings(AppConfig.PREF_UI_MODE_NIGHT, mode)
         _themeMode.value = mode
     }
 
+    fun setDynamicColor(enabled: Boolean) {
+        MmkvManager.encodeSettings(AppConfig.PREF_DYNAMIC_COLOR, enabled)
+        _dynamicColor.value = enabled
+    }
+
     fun refresh() {
         _themeMode.value =
             MmkvManager.decodeSettingsString(AppConfig.PREF_UI_MODE_NIGHT, "0") ?: "0"
+        _dynamicColor.value = MmkvManager.decodeSettingsBool(AppConfig.PREF_DYNAMIC_COLOR, false)
     }
 }
 
@@ -157,7 +174,26 @@ fun AppTheme(
     recordBackdrop: Boolean = true,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = if (darkTheme) DarkColor else LightColor
+    // Material You: палитра из обоев, но чёрный фон тёмной темы сохраняем -
+    // ради него AMOLED-экраны и берут это приложение
+    val dynamicColor by ThemeManager.dynamicColor.collectAsState()
+    val context = LocalContext.current
+    val colorScheme = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && darkTheme ->
+            dynamicDarkColorScheme(context).copy(
+                background = DarkColor.background,
+                surface = DarkColor.surface,
+                surfaceContainerLowest = DarkColor.surfaceContainerLowest,
+                surfaceContainerLow = DarkColor.surfaceContainerLow,
+                surfaceContainer = DarkColor.surfaceContainer
+            )
+
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
+            dynamicLightColorScheme(context)
+
+        darkTheme -> DarkColor
+        else -> LightColor
+    }
     val snackbarController = rememberAppSnackbarController()
 
     val view = LocalView.current

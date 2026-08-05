@@ -347,6 +347,17 @@ private fun UiSettings(modifier: Modifier) {
     val uiModeNightValues = stringArrayResource(R.array.ui_mode_night_value).toList()
 
     SettingsColumn(modifier) {
+        // Динамические цвета есть только с Android 12 - на старых прятать пункт честнее,
+        // чем показывать переключатель, который ничего не делает
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            val dynamicColor by ThemeManager.dynamicColor.collectAsStateWithLifecycle()
+            SettingsSwitchItem(
+                title = stringResource(R.string.title_pref_dynamic_color),
+                summary = stringResource(R.string.summary_pref_dynamic_color),
+                checked = dynamicColor,
+                onCheckedChange = { ThemeManager.setDynamicColor(it) }
+            )
+        }
         SettingsSwitchItem(
             title = stringResource(R.string.title_pref_speed_enabled),
             summary = stringResource(R.string.summary_pref_speed_enabled),

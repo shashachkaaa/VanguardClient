@@ -193,6 +193,9 @@
     <string name="main_import_clipboard">Import from clipboard</string>
     <string name="main_import_qr">Scan QR code</string>
     <string name="main_import_file">Import from file</string>
+    <string name="main_session_traffic">Session: %1$s down · %2$s up</string>
+    <string name="title_pref_dynamic_color">Wallpaper colours</string>
+    <string name="summary_pref_dynamic_color">Take the accent from the system wallpaper. The dark theme keeps its black background</string>
     <!-- Preferences -->
     <string name="title_info_commit">Build commit</string>
     <string name="title_info_url_schemes">URL schemes</string>

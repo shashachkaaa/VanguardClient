@@ -32,6 +32,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -49,7 +50,9 @@ import kotlinx.coroutines.delay
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toSpeedString
+import com.v2ray.ang.extension.toTrafficString
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
+import com.v2ray.ang.handler.SessionTraffic
 import com.v2ray.ang.handler.TrafficSpeed
 import com.v2ray.ang.handler.TrafficSpeedState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -143,6 +146,8 @@ fun MainScreen(
     // Скорость считает служба для уведомления, здесь только показываем.
     // Без включённой статистики ядро её не отдаёт, поэтому строку прячем
     val speed by TrafficSpeedState.speed.collectAsStateWithLifecycle()
+    val speedHistory by TrafficSpeedState.history.collectAsStateWithLifecycle()
+    val session by TrafficSpeedState.session.collectAsStateWithLifecycle()
     val speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, false)
 
     // Пузырёк капсулы. Из настроек он должен приехать с шестерёнки, а не оказаться
@@ -206,7 +211,9 @@ fun MainScreen(
 
                 SpeedRow(
                     visible = uiState.isRunning && speedEnabled,
-                    speed = speed
+                    speed = speed,
+                    history = speedHistory,
+                    session = session
                 )
 
                 // Действия под кнопкой оформлены чипами, а не голым текстом
@@ -617,25 +624,101 @@ private fun PowerButton(
 
 /**
  * Скорость под кнопкой: приходит из того же замера, что и уведомление.
+ * Под цифрами - график за последние замеры и объём, набежавший за сеанс.
  */
 @Composable
 private fun SpeedRow(
     visible: Boolean,
-    speed: TrafficSpeed
+    speed: TrafficSpeed,
+    history: List<TrafficSpeed>,
+    session: SessionTraffic
 ) {
     AnimatedVisibility(
         visible = visible,
         enter = fadeIn(tween(300)) + expandVertically(tween(300)),
         exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
     ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(18.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(bottom = 10.dp)
         ) {
-            SpeedValue(down = true, value = speed.totalDown)
-            SpeedValue(down = false, value = speed.totalUp)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SpeedValue(down = true, value = speed.totalDown)
+                SpeedValue(down = false, value = speed.totalUp)
+            }
+
+            SpeedGraph(
+                history = history,
+                modifier = Modifier
+                    .padding(top = 8.dp)
+                    .fillMaxWidth(0.62f)
+                    .height(34.dp)
+            )
+
+            Text(
+                text = stringResource(
+                    R.string.main_session_traffic,
+                    session.down.toTrafficString(),
+                    session.up.toTrafficString()
+                ),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Medium,
+                modifier = Modifier.padding(top = 6.dp)
+            )
         }
+    }
+}
+
+/**
+ * График скорости: заливка под линией для загрузки, линия потоньше для отдачи.
+ * Масштаб плавающий - по максимуму окна, иначе на медленном соединении был бы прочерк.
+ */
+@Composable
+private fun SpeedGraph(history: List<TrafficSpeed>, modifier: Modifier = Modifier) {
+    val scheme = MaterialTheme.colorScheme
+    val downColor = scheme.primary
+    val upColor = scheme.onSurfaceVariant
+
+    Canvas(modifier = modifier) {
+        val points = history.takeLast(TrafficSpeedState.HISTORY_SIZE)
+        if (points.size < 2) return@Canvas
+
+        val peak = points.maxOf { maxOf(it.totalDown, it.totalUp) }.coerceAtLeast(1L).toFloat()
+        val stepX = size.width / (points.size - 1)
+
+        fun path(values: (TrafficSpeed) -> Long, close: Boolean): Path = Path().apply {
+            points.forEachIndexed { i, sample ->
+                val x = i * stepX
+                val y = size.height - (values(sample) / peak) * size.height
+                if (i == 0) moveTo(x, y) else lineTo(x, y)
+            }
+            if (close) {
+                lineTo(size.width, size.height)
+                lineTo(0f, size.height)
+                close()
+            }
+        }
+
+        drawPath(
+            path = path({ it.totalDown }, close = true),
+            brush = Brush.verticalGradient(
+                listOf(downColor.copy(alpha = 0.35f), downColor.copy(alpha = 0.02f))
+            )
+        )
+        drawPath(
+            path = path({ it.totalDown }, close = false),
+            color = downColor,
+            style = Stroke(width = 2.5f, cap = StrokeCap.Round)
+        )
+        drawPath(
+            path = path({ it.totalUp }, close = false),
+            color = upColor.copy(alpha = 0.7f),
+            style = Stroke(width = 1.8f, cap = StrokeCap.Round)
+        )
     }
 }
 
