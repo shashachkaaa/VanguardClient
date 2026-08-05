@@ -33,6 +33,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -62,6 +63,9 @@ import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.sin
 
 @Composable
 fun ChevronDown(color: Color, modifier: Modifier = Modifier) {
@@ -69,6 +73,24 @@ fun ChevronDown(color: Color, modifier: Modifier = Modifier) {
         val strokeW = 4f
         drawLine(color, Offset(size.width * 0.2f, size.height * 0.3f), Offset(size.width * 0.5f, size.height * 0.7f), strokeWidth = strokeW, cap = StrokeCap.Round)
         drawLine(color, Offset(size.width * 0.5f, size.height * 0.7f), Offset(size.width * 0.8f, size.height * 0.3f), strokeWidth = strokeW, cap = StrokeCap.Round)
+    }
+}
+
+/** Звёздочка у закреплённого сервера: рисуем сами, чтобы не тащить ещё один вектор. */
+@Composable
+fun StarIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val radius = size.minDimension / 2f
+        val path = Path()
+        repeat(10) { index ->
+            val angle = PI / 5 * index - PI / 2
+            val r = if (index % 2 == 0) radius else radius * 0.45f
+            val x = center.x + (r * cos(angle)).toFloat()
+            val y = center.y + (r * sin(angle)).toFloat()
+            if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+        }
+        path.close()
+        drawPath(path, color)
     }
 }
 
@@ -177,6 +199,7 @@ fun ProfileCard(
     subscription: SubscriptionCache,
     servers: List<ServersCache>,
     selectedGuid: String?,
+    pinnedGuids: Set<String>,
     expanded: Boolean = true,
     onToggleExpanded: () -> Unit = {},
     onAction: (MainAction) -> Unit,
@@ -306,6 +329,15 @@ fun ProfileCard(
                             shadowElevation = 0.dp,
                             modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
+                            GroupHousekeepingItems(
+                                groupId = subscription.guid,
+                                onAction = onAction,
+                                onDismiss = { showMenu = false }
+                            )
+                            HorizontalDivider(
+                                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f),
+                                thickness = 1.dp
+                            )
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.action_edit), color = MaterialTheme.colorScheme.onSurface) },
                                 onClick = {
@@ -435,6 +467,7 @@ fun ProfileCard(
             ServerRow(
                 serverCache = serverCache,
                 isSelected = serverCache.guid == selectedGuid,
+                pinned = serverCache.guid in pinnedGuids,
                 onAction = onAction,
                 onSelectServer = onSelectServer,
                 onEditServer = onEditServer
@@ -446,20 +479,29 @@ fun ProfileCard(
 }
 
 /**
- * Раздел «Сервера»: ключи, добавленные по одному, а не пришедшие из подписки.
- * Обновлять здесь нечего, поэтому из шапки остались только счётчик и пинг.
+ * Карточка списка серверов без подписки за спиной: раздел отдельных ключей и
+ * избранное. Обновлять здесь нечего, поэтому в шапке только счётчик, пинг и
+ * хозяйство группы - и то лишь там, где за списком стоит настоящая группа.
+ *
+ * @param groupId Группа в хранилище или null для избранного: у него своей группы
+ * нет, сервера в нём чужие, и хозяйничать над ними отсюда нельзя.
  */
 @Composable
-fun StandaloneServersCard(
+fun PlainServersCard(
+    title: String,
+    subtitle: String,
     servers: List<ServersCache>,
     selectedGuid: String?,
+    pinnedGuids: Set<String>,
     expanded: Boolean = true,
     onToggleExpanded: () -> Unit = {},
     onAction: (MainAction) -> Unit,
-    onPingGroup: () -> Unit,
     onSelectServer: (String) -> Unit,
-    onEditServer: (String, ProfileItem) -> Unit
+    onEditServer: (String, ProfileItem) -> Unit,
+    groupId: String? = null
 ) {
+    var showMenu by remember { mutableStateOf(false) }
+
     Column(modifier = Modifier.fillMaxWidth()) {
         Card(
             modifier = Modifier
@@ -481,7 +523,7 @@ fun StandaloneServersCard(
                 val chevronRotation by animateFloatAsState(
                     targetValue = if (expanded) 0f else -90f,
                     animationSpec = tween(220),
-                    label = "standaloneChevron"
+                    label = "plainChevron"
                 )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
@@ -501,7 +543,7 @@ fun StandaloneServersCard(
 
                     Column(Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(R.string.main_standalone_servers),
+                            text = title,
                             fontSize = 16.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                             fontWeight = FontWeight.ExtraBold,
@@ -509,7 +551,7 @@ fun StandaloneServersCard(
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
-                            text = stringResource(R.string.main_standalone_count, servers.size),
+                            text = subtitle,
                             fontSize = 9.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.SemiBold
@@ -517,19 +559,53 @@ fun StandaloneServersCard(
                     }
                 }
 
-                GlassSurface(
-                    shape = GlassCapsuleShape,
-                    opaqueness = 0.85f,
-                    fallbackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                if (groupId != null) {
+                    GlassSurface(
+                        shape = GlassCapsuleShape,
+                        opaqueness = 0.85f,
+                        fallbackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)
                     ) {
-                        IconButton(onClick = onPingGroup, modifier = Modifier.size(28.dp)) {
-                            ClockIcon(
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(16.dp)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 3.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    onAction(MainAction.SelectGroup(groupId))
+                                    onAction(MainAction.TestProfilePing(groupId))
+                                },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                ClockIcon(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.width(6.dp))
+
+                    Box {
+                        IconButton(onClick = { showMenu = true }, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                painterResource(id = R.drawable.ic_more_vert_24dp),
+                                contentDescription = stringResource(R.string.main_menu),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            shape = GlassMenuShape,
+                            containerColor = Color.Transparent,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.glassPanel(GlassMenuShape)
+                        ) {
+                            GroupHousekeepingItems(
+                                groupId = groupId,
+                                onAction = onAction,
+                                onDismiss = { showMenu = false }
                             )
                         }
                     }
@@ -547,6 +623,7 @@ fun StandaloneServersCard(
                     ServerRow(
                         serverCache = serverCache,
                         isSelected = serverCache.guid == selectedGuid,
+                        pinned = serverCache.guid in pinnedGuids,
                         onAction = onAction,
                         onSelectServer = onSelectServer,
                         onEditServer = onEditServer
@@ -558,6 +635,65 @@ fun StandaloneServersCard(
 }
 
 /**
+ * Общие пункты для меню группы: одни и те же у подписки и у отдельных серверов.
+ */
+@Composable
+fun GroupHousekeepingItems(
+    groupId: String,
+    onAction: (MainAction) -> Unit,
+    onDismiss: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(R.string.main_group_test_all),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        onClick = {
+            onDismiss()
+            onAction(MainAction.SelectGroup(groupId))
+            onAction(MainAction.TestProfilePing(groupId))
+        }
+    )
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(R.string.main_group_sort_ping),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        onClick = {
+            onDismiss()
+            onAction(MainAction.SortGroupByPing(groupId))
+        }
+    )
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(R.string.main_group_remove_duplicates),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        onClick = {
+            onDismiss()
+            onAction(MainAction.RemoveDuplicatesInGroup(groupId))
+        }
+    )
+    DropdownMenuItem(
+        text = {
+            Text(
+                stringResource(R.string.main_group_remove_invalid),
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        },
+        onClick = {
+            onDismiss()
+            onAction(MainAction.RemoveInvalidInGroup(groupId))
+        }
+    )
+}
+/**
  * Строка сервера: одна и та же и в подписке, и в разделе отдельных серверов.
  */
 @OptIn(ExperimentalFoundationApi::class)
@@ -565,6 +701,7 @@ fun StandaloneServersCard(
 private fun ServerRow(
     serverCache: ServersCache,
     isSelected: Boolean,
+    pinned: Boolean,
     onAction: (MainAction) -> Unit,
     onSelectServer: (String) -> Unit,
     onEditServer: (String, ProfileItem) -> Unit
@@ -684,14 +821,25 @@ private fun ServerRow(
             Spacer(Modifier.width(12.dp))
 
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = serverCache.profile.remarks ?: stringResource(R.string.main_untitled),
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 16.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (pinned) {
+                        StarIcon(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(12.dp)
+                                .padding(end = 1.dp)
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        text = serverCache.profile.remarks ?: stringResource(R.string.main_untitled),
+                        fontWeight = FontWeight.ExtraBold,
+                        fontSize = 16.sp,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = finalDesc,
@@ -744,6 +892,18 @@ private fun ServerRow(
         shadowElevation = 0.dp,
         modifier = Modifier.glassPanel(GlassMenuShape)
     ) {
+        DropdownMenuItem(
+            text = {
+                Text(
+                    stringResource(if (pinned) R.string.main_unpin else R.string.main_pin),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            },
+            onClick = {
+                showServerMenu = false
+                onAction(MainAction.TogglePinned(serverCache.guid))
+            }
+        )
         DropdownMenuItem(
             text = { Text(stringResource(R.string.main_share_link), color = MaterialTheme.colorScheme.onSurface) },
             onClick = {

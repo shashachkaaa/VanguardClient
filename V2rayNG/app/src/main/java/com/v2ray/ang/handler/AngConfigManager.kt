@@ -766,6 +766,8 @@ object AngConfigManager {
             if (count > 0) {
                 it.subscription.lastUpdated = System.currentTimeMillis()
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
+                // Данные о лимите свежие ровно сейчас - здесь и решаем, предупреждать ли
+                SubscriptionAlerts.check(it.guid, it.subscription)
                 // Новый интервал из заголовка нужно донести до планировщика,
                 // иначе задача так и будет ходить по старому расписанию
                 if (intervalChanged && it.subscription.autoUpdate) {
@@ -805,6 +807,44 @@ object AngConfigManager {
      *
      * @param subId The subscription ID.
      */
+    /**
+     * Убирает из группы повторы: сравниваем по адресу подключения, а не по названию -
+     * один и тот же сервер в двух импортах обычно подписан по-разному.
+     * Первый встреченный остаётся, остальные удаляются вместе с профилями.
+     *
+     * @return Сколько серверов убрано.
+     */
+    fun removeDuplicateServers(subId: String): Int {
+        val serverList = MmkvManager.decodeServerList(subId)
+        if (serverList.size < 2) return 0
+
+        val seen = mutableSetOf<String>()
+        val duplicates = mutableListOf<String>()
+
+        serverList.forEach { guid ->
+            val profile = MmkvManager.decodeServerConfig(guid) ?: return@forEach
+            val fingerprint = listOf(
+                profile.configType.name,
+                profile.server.orEmpty(),
+                profile.serverPort.orEmpty(),
+                profile.password.orEmpty(),
+                profile.method.orEmpty(),
+                profile.network.orEmpty(),
+                profile.path.orEmpty(),
+                profile.sni.orEmpty()
+            ).joinToString("|")
+
+            if (!seen.add(fingerprint)) {
+                duplicates.add(guid)
+            }
+        }
+
+        if (duplicates.isNotEmpty()) {
+            MmkvManager.removeServers(duplicates, subId)
+        }
+        return duplicates.size
+    }
+
     fun sortByTestResultsForSub(subId: String) {
         val serverList = MmkvManager.decodeServerList(subId)
         if (serverList.isEmpty()) return

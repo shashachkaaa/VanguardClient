@@ -139,9 +139,18 @@ class MainRepository(
     override fun encodeServerList(guids: List<String>, groupId: String) =
         MmkvManager.encodeServerList(ArrayList(guids), groupId)
 
+    override fun getPinnedServers(): List<String> = MmkvManager.decodePinnedServers()
+
+    override fun setPinnedServers(guids: List<String>) = MmkvManager.encodePinnedServers(guids)
+
+    override fun togglePinnedServer(guid: String): Boolean = MmkvManager.togglePinnedServer(guid)
+
     override fun removeServer(guid: String) = MmkvManager.removeServer(guid)
 
     override fun removeAllServer(): Int = MmkvManager.removeAllServer()
+
+    override fun removeDuplicateServers(groupId: String): Int =
+        AngConfigManager.removeDuplicateServers(groupId)
 
     override fun removeInvalidServerByGuid(guid: String): Int =
         MmkvManager.removeInvalidServer(guid)

@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,6 +30,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
@@ -37,6 +40,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
@@ -45,6 +49,7 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -187,9 +192,19 @@ fun MainScreen(
         .collectAsStateWithLifecycle(initialValue = emptyList())
     val showStandalone = standaloneServers.isNotEmpty()
 
+    // Избранное собирается из всех групп, поэтому идёт отдельным разделом на самом верху
+    val pinnedServers by mainViewModel.pinnedServers.collectAsStateWithLifecycle()
+    val pinnedGuids by mainViewModel.pinnedGuids.collectAsStateWithLifecycle()
+
+    // Поиск: строка появляется по чипу и фильтрует все списки разом
+    var searchVisible by rememberSaveable { mutableStateOf(false) }
+    var searchQuery by rememberSaveable { mutableStateOf("") }
+    LaunchedEffect(searchQuery) { onAction(MainAction.Search(searchQuery)) }
+
     // Свёрнутые карточки: «Скрыть все» прячет списки серверов, шапки остаются
     var collapsedGuids by rememberSaveable { mutableStateOf(listOf<String>()) }
     val collapsibleGuids = buildList {
+        if (pinnedServers.isNotEmpty()) add(PINNED_GROUP_KEY)
         if (showStandalone) add(STANDALONE_GROUP_ID)
         subscriptions.forEach { add(it.guid) }
     }
@@ -251,6 +266,27 @@ fun MainScreen(
                             collapsedGuids = if (allCollapsed) emptyList() else collapsibleGuids
                         }
                     )
+                    ActionChip(
+                        text = stringResource(R.string.main_action_search),
+                        selected = searchVisible,
+                        onClick = {
+                            searchVisible = !searchVisible
+                            // Закрыли поиск - фильтр снимается, иначе списки остались бы урезанными
+                            if (!searchVisible) searchQuery = ""
+                        }
+                    )
+                }
+
+                AnimatedVisibility(
+                    visible = searchVisible,
+                    enter = fadeIn(tween(200)) + expandVertically(tween(200)),
+                    exit = fadeOut(tween(150)) + shrinkVertically(tween(150))
+                ) {
+                    SearchField(
+                        query = searchQuery,
+                        onQueryChange = { searchQuery = it },
+                        onClear = { searchQuery = "" }
+                    )
                 }
 
                 if (subscriptions.isEmpty() && !showStandalone) {
@@ -278,11 +314,45 @@ fun MainScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                         contentPadding = PaddingValues(bottom = 110.dp)
                     ) {
+                        if (pinnedServers.isNotEmpty()) {
+                            item(key = "pinned-servers") {
+                                PlainServersCard(
+                                    title = stringResource(R.string.main_pinned_servers),
+                                    subtitle = stringResource(
+                                        R.string.main_pinned_count,
+                                        pinnedServers.size
+                                    ),
+                                    servers = pinnedServers,
+                                    selectedGuid = uiState.selectedGuid,
+                                    pinnedGuids = pinnedGuids,
+                                    expanded = PINNED_GROUP_KEY !in collapsedGuids,
+                                    onToggleExpanded = {
+                                        collapsedGuids = if (PINNED_GROUP_KEY in collapsedGuids) {
+                                            collapsedGuids - PINNED_GROUP_KEY
+                                        } else {
+                                            collapsedGuids + PINNED_GROUP_KEY
+                                        }
+                                    },
+                                    onAction = onAction,
+                                    onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
+                                    onEditServer = { guid, profile ->
+                                        onAction(MainAction.EditServer(guid, profile))
+                                    }
+                                )
+                            }
+                        }
+
                         if (showStandalone) {
                             item(key = "standalone-servers") {
-                                StandaloneServersCard(
+                                PlainServersCard(
+                                    title = stringResource(R.string.main_standalone_servers),
+                                    subtitle = stringResource(
+                                        R.string.main_standalone_count,
+                                        standaloneServers.size
+                                    ),
                                     servers = standaloneServers,
                                     selectedGuid = uiState.selectedGuid,
+                                    pinnedGuids = pinnedGuids,
                                     expanded = STANDALONE_GROUP_ID !in collapsedGuids,
                                     onToggleExpanded = {
                                         collapsedGuids = if (STANDALONE_GROUP_ID in collapsedGuids) {
@@ -292,14 +362,11 @@ fun MainScreen(
                                         }
                                     },
                                     onAction = onAction,
-                                    onPingGroup = {
-                                        onAction(MainAction.SelectGroup(STANDALONE_GROUP_ID))
-                                        onAction(MainAction.TestProfilePing(STANDALONE_GROUP_ID))
-                                    },
                                     onSelectServer = { guid -> onAction(MainAction.SelectServer(guid)) },
                                     onEditServer = { guid, profile ->
                                         onAction(MainAction.EditServer(guid, profile))
-                                    }
+                                    },
+                                    groupId = STANDALONE_GROUP_ID
                                 )
                             }
                         }
@@ -341,6 +408,7 @@ fun MainScreen(
                                 subscription = subCache,
                                 servers = servers,
                                 selectedGuid = uiState.selectedGuid,
+                                pinnedGuids = pinnedGuids,
                                 expanded = subCache.guid !in collapsedGuids,
                                 onToggleExpanded = {
                                     collapsedGuids = if (subCache.guid in collapsedGuids) {
@@ -505,6 +573,79 @@ private fun TopProgressBanner(
                             modifier = Modifier.size(12.dp)
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Строка поиска: фильтрует все списки разом - и подписки, и отдельные сервера,
+ * и избранное. Ищет по названию, адресу, описанию и протоколу.
+ */
+@Composable
+private fun SearchField(
+    query: String,
+    onQueryChange: (String) -> Unit,
+    onClear: () -> Unit
+) {
+    val focusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { focusRequester.requestFocus() } }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 10.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp)
+        ) {
+            Icon(
+                painter = painterResource(id = R.drawable.ic_search_24dp),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+            Spacer(Modifier.width(10.dp))
+
+            BasicTextField(
+                value = query,
+                onValueChange = onQueryChange,
+                singleLine = true,
+                textStyle = TextStyle(
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(vertical = 12.dp)
+                    .focusRequester(focusRequester),
+                decorationBox = { innerTextField ->
+                    if (query.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.main_search_hint),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                    innerTextField()
+                }
+            )
+
+            if (query.isNotEmpty()) {
+                IconButton(onClick = onClear, modifier = Modifier.size(22.dp)) {
+                    CrossIcon(
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(12.dp)
+                    )
                 }
             }
         }
@@ -890,7 +1031,8 @@ private fun SpeedValue(down: Boolean, value: Long) {
 private fun ActionChip(
     text: String,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selected: Boolean = false
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
@@ -902,10 +1044,14 @@ private fun ActionChip(
 
     // Подложка держится на акценте: на чёрной теме серый контейнер сливался с фоном
     // до полной невидимости, и чип читался как просто текст, а не как кнопка
+    // Включённый чип заливается плотнее: иначе непонятно, что поиск открыт
     Surface(
         shape = RoundedCornerShape(14.dp),
-        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.30f)),
+        color = MaterialTheme.colorScheme.primary.copy(alpha = if (selected) 0.28f else 0.12f),
+        border = BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.primary.copy(alpha = if (selected) 0.60f else 0.30f)
+        ),
         modifier = modifier
             .scale(scale)
             .clickable(

@@ -64,6 +64,16 @@ class MainViewModel(
     private val _subscriptions = MutableStateFlow<List<SubscriptionCache>>(emptyList())
     val subscriptions: StateFlow<List<SubscriptionCache>> = _subscriptions.asStateFlow()
 
+    private val _pinnedServers = MutableStateFlow<List<ServersCache>>(emptyList())
+
+    /** Избранное: закреплённые сервера из всех групп, отдельным разделом сверху. */
+    val pinnedServers: StateFlow<List<ServersCache>> = _pinnedServers.asStateFlow()
+
+    private val _pinnedGuids = MutableStateFlow<Set<String>>(emptySet())
+
+    /** Те же закреплённые, но набором - строке сервера нужно знать про звёздочку. */
+    val pinnedGuids: StateFlow<Set<String>> = _pinnedGuids.asStateFlow()
+
     val isImporting = MutableStateFlow(false)
     val importError = MutableStateFlow<String?>(null)
 
@@ -288,13 +298,65 @@ class MainViewModel(
         }
     }
 
-    fun sortByTestResultsInternal() {
+    /** Переставляет сервера группы по замеру: сначала быстрые, непроверенные в конце. */
+    private fun sortGroupByPing(groupId: String) {
         viewModelScope.launch(ioDispatcher) {
-            val currentGroup = uiState.value.selectedGroupId
-            dataSource.sortByTestResultsForSub(currentGroup)
-            cacheMutex.withLock { groupDataCache.remove(currentGroup) }
-            updateGroupUi(currentGroup, loadGroup(currentGroup, forceRefresh = true))
+            dataSource.sortByTestResultsForSub(groupId)
+            refreshGroup(groupId)
         }
+    }
+
+    private fun removeDuplicatesInGroup(groupId: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val removed = dataSource.removeDuplicateServers(groupId)
+            refreshGroup(groupId)
+            rebuildPinned()
+            importError.value = if (removed > 0) {
+                dataSource.getString(R.string.main_removed_count, removed)
+            } else {
+                dataSource.getString(R.string.main_removed_nothing)
+            }
+        }
+    }
+
+    private fun removeInvalidInGroup(groupId: String) {
+        viewModelScope.launch(ioDispatcher) {
+            val removed = dataSource.removeInvalidServersInGroup(groupId)
+            refreshGroup(groupId)
+            rebuildPinned()
+            importError.value = if (removed > 0) {
+                dataSource.getString(R.string.main_removed_count, removed)
+            } else {
+                dataSource.getString(R.string.main_removed_nothing)
+            }
+        }
+    }
+
+    private fun togglePinned(guid: String) {
+        viewModelScope.launch(ioDispatcher) {
+            dataSource.togglePinnedServer(guid)
+            rebuildPinned()
+        }
+    }
+
+    /** Перечитывает одну группу мимо кэша: содержимое только что менялось. */
+    private suspend fun refreshGroup(groupId: String) {
+        cacheMutex.withLock { groupDataCache.remove(groupId) }
+        updateGroupUi(groupId, loadGroup(groupId, forceRefresh = true))
+    }
+
+    /**
+     * Пересобирает избранное. Заодно чистит список от исчезнувших серверов:
+     * профиль мог уехать с обновлением подписки, а guid остался бы висеть.
+     */
+    private suspend fun rebuildPinned() {
+        val guids = dataSource.getPinnedServers()
+        val servers = buildServersCache(guids)
+        if (servers.size != guids.size) {
+            dataSource.setPinnedServers(servers.map { it.guid })
+        }
+        _pinnedGuids.value = servers.mapTo(HashSet()) { it.guid }
+        _pinnedServers.value = applyKeywordFilter(servers)
     }
 
     fun serversForGroup(groupId: String): StateFlow<List<ServersCache>> =
@@ -325,15 +387,12 @@ class MainViewModel(
             is MainAction.TestProfilePing -> testProfilePing(action.subscriptionId)
             MainAction.Initialize -> initialize()
             MainAction.RefreshGroups -> setupGroupTab(forceRefresh = true)
-            MainAction.TestAllServers -> testAllRealPing(true)
-            MainAction.TestRealAllServers -> testAllRealPing()
             MainAction.CancelTesting -> cancelAllPing()
-            MainAction.RemoveAllServers -> removeAllServerAsync()
-            MainAction.RemoveDuplicateServers -> removeDuplicateServerAsync()
-            MainAction.RemoveInvalidServers -> removeInvalidServerAsync()
-            MainAction.SortByTestResults -> sortByTestResultsInternal()
             MainAction.UpdateSubscriptions -> importConfigViaSub()
-            MainAction.ExportAll -> exportAllAsync()
+            is MainAction.SortGroupByPing -> sortGroupByPing(action.groupId)
+            is MainAction.RemoveDuplicatesInGroup -> removeDuplicatesInGroup(action.groupId)
+            is MainAction.RemoveInvalidInGroup -> removeInvalidInGroup(action.groupId)
+            is MainAction.TogglePinned -> togglePinned(action.guid)
             is MainAction.SelectGroup -> subscriptionIdChanged(action.groupId)
             is MainAction.SelectServer -> updateSelectedGuid(action.guid)
             is MainAction.RemoveServer -> removeServerAndRefresh(action.guid)
@@ -472,6 +531,7 @@ class MainViewModel(
                 // только после перезапуска
                 val standalone = loadGroup(STANDALONE_GROUP_ID, forceRefresh)
                 updateGroupUi(STANDALONE_GROUP_ID, standalone)
+                rebuildPinned()
 
                 val standaloneGroup = if (standalone.isNotEmpty()) {
                     listOf(GroupMapItem(id = STANDALONE_GROUP_ID, remarks = ""))
@@ -592,8 +652,6 @@ class MainViewModel(
         }
     }
 
-    private fun exportAllAsync() {}
-
     fun updateSelectedGuid(guid: String) {
         _uiState.update { it.copy(selectedGuid = guid) }
         dataSource.setSelectServer(guid)
@@ -604,17 +662,11 @@ class MainViewModel(
         dataSource.testCurrentServerRealPing()
     }
 
-    private fun testAllRealPing(isTcp: Boolean = false) {
-        dataSource.testCurrentServerRealPing()
-    }
-    
     private fun cancelAllPing() {
         dataSource.cancelAllPing()
     }
-    private fun removeAllServerAsync() {}
-    private fun removeDuplicateServerAsync() {}
-    private fun removeInvalidServerAsync() {}
-    
+
+
     private fun subscriptionIdChanged(groupId: String) {
         _uiState.update { it.copy(selectedGroupId = groupId) }
         dataSource.setSelectedSubscriptionId(groupId)
@@ -634,7 +686,20 @@ class MainViewModel(
             setupGroupTab(forceRefresh = true)
         }
     }
-    private fun filterConfig(query: String) {}
+    /**
+     * Поиск по названию, адресу, описанию и протоколу. Списки не перечитываются
+     * с диска - фильтр накладывается на то, что уже лежит в кэше групп.
+     */
+    private fun filterConfig(query: String) {
+        if (query == keywordFilter) return
+        keywordFilter = query
+        viewModelScope.launch(ioDispatcher) {
+            (uiState.value.groups.map { it.id } + STANDALONE_GROUP_ID)
+                .distinct()
+                .forEach { groupId -> updateGroupUi(groupId, loadGroup(groupId)) }
+            rebuildPinned()
+        }
+    }
     private fun consumeLocateTarget(target: LocateTarget) {}
     private fun onTestsFinished() {}
 }

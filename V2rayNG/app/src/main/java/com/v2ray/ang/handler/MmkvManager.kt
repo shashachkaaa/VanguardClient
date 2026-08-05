@@ -40,6 +40,7 @@ object MmkvManager {
     private const val KEY_ANG_CONFIGS = "ANG_CONFIGS"
     private const val KEY_SUB_SERVER_PREFIX = "SUB_SERVERS_"
     private const val KEY_SUB_IDS = "SUB_IDS"
+    private const val KEY_PINNED_SERVERS = "PINNED_SERVERS"
     private const val KEY_WEBDAV_CONFIG = "WEBDAV_CONFIG"
 
     private val mainStorage by lazy { MMKV.mmkvWithID(ID_MAIN, MMKV.MULTI_PROCESS_MODE) }
@@ -145,6 +146,39 @@ object MmkvManager {
 
 
     /**
+     * Закреплённые сервера: список guid в порядке закрепления.
+     * Хранится отдельно от профилей - закрепление не свойство сервера,
+     * а порядок в чужом списке, который могут переписать при обновлении.
+     */
+    fun decodePinnedServers(): MutableList<String> {
+        val json = mainStorage.decodeString(KEY_PINNED_SERVERS)
+        return if (json.isNullOrBlank()) {
+            mutableListOf()
+        } else {
+            JsonUtil.fromJsonSafe(json, Array<String>::class.java)?.toMutableList() ?: mutableListOf()
+        }
+    }
+
+    fun encodePinnedServers(guids: List<String>) {
+        mainStorage.encode(KEY_PINNED_SERVERS, JsonUtil.toJson(guids))
+    }
+
+    /**
+     * Переключает закрепление сервера.
+     *
+     * @return true, если сервер стал закреплённым.
+     */
+    fun togglePinnedServer(guid: String): Boolean {
+        val pinned = decodePinnedServers()
+        val nowPinned = if (pinned.remove(guid)) false else {
+            pinned.add(guid)
+            true
+        }
+        encodePinnedServers(pinned)
+        return nowPinned
+    }
+
+    /**
      * Decodes the server configuration.
      *
      * @param guid The server GUID.
@@ -221,6 +255,7 @@ object MmkvManager {
         if (getSelectServer() == guid) {
             mainStorage.remove(KEY_SELECTED_SERVER)
         }
+        unpinServers(listOf(guid))
         profileFullStorage.remove(guid)
         serverAffStorage.remove(guid)
     }
@@ -262,6 +297,7 @@ object MmkvManager {
         }
 
         val selectedServer = getSelectServer()
+        unpinServers(guids)
         guids.forEach { guid ->
             if (selectedServer == guid) {
                 mainStorage.remove(KEY_SELECTED_SERVER)
@@ -269,6 +305,14 @@ object MmkvManager {
             profileFullStorage.remove(guid)
             serverAffStorage.remove(guid)
             serverRawStorage.remove(guid)
+        }
+    }
+
+    /** Снимает закрепление с удаляемых серверов, чтобы в избранном не осталось призраков. */
+    private fun unpinServers(guids: List<String>) {
+        val pinned = decodePinnedServers()
+        if (pinned.removeAll(guids.toSet())) {
+            encodePinnedServers(pinned)
         }
     }
 

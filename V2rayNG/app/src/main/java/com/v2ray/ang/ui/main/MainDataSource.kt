@@ -32,8 +32,13 @@ interface MainDataSource : Closeable {
 
     fun encodeServerList(guids: List<String>, groupId: String)
 
+    fun getPinnedServers(): List<String>
+    fun setPinnedServers(guids: List<String>)
+    fun togglePinnedServer(guid: String): Boolean
+
     fun removeServer(guid: String)
     fun removeAllServer(): Int
+    fun removeDuplicateServers(groupId: String): Int
     fun removeInvalidServerByGuid(guid: String): Int
     fun removeInvalidServersInGroup(groupId: String): Int
 
