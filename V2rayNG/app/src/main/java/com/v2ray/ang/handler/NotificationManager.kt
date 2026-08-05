@@ -15,6 +15,7 @@ import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreServiceManager
 import com.v2ray.ang.dto.entities.ProfileItem
+import com.v2ray.ang.helper.MessageHelper
 import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.ui.main.MainActivity
 import com.v2ray.ang.util.LogUtil
@@ -278,17 +279,23 @@ object NotificationManager {
 
         // Тот же замер отдаём интерфейсу: счётчики ядра приходят с обнулением,
         // так что опрашивать их вторым циклом ради главного экрана нельзя
-        TrafficSpeedState.publish(
-            TrafficSpeed(
+        // Ядро живёт в отдельном процессе, поэтому замер уходит интерфейсу сообщением:
+        // общий объект между процессами не разделяется, и на экране были бы нули
+        getService()?.let { service ->
+            val speed = TrafficSpeed(
                 proxyUp = (proxyUplink / sinceLastQueryInSeconds).toLong(),
                 proxyDown = (proxyDownlink / sinceLastQueryInSeconds).toLong(),
                 directUp = (directUplink / sinceLastQueryInSeconds).toLong(),
                 directDown = (directDownlink / sinceLastQueryInSeconds).toLong(),
                 otherUp = (otherUplink / sinceLastQueryInSeconds).toLong(),
                 otherDown = (otherDownlink / sinceLastQueryInSeconds).toLong()
-            ),
-            intervalSeconds = sinceLastQueryInSeconds
-        )
+            )
+            MessageHelper.sendMsg2UI(
+                service,
+                AppConfig.MSG_TRAFFIC_SPEED,
+                TrafficSpeedState.encode(speed, sinceLastQueryInSeconds)
+            )
+        }
 
         if (!zeroSpeed || !lastZeroSpeed) {
             val text = StringBuilder()

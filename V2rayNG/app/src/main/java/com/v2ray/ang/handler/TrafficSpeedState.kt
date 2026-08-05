@@ -32,6 +32,29 @@ data class SessionTraffic(val up: Long = 0L, val down: Long = 0L) {
 
 object TrafficSpeedState {
 
+    /**
+     * Замер в виде строки для передачи между процессами: ядро крутится в своём процессе,
+     * и общий объект туда не дотягивается.
+     */
+    fun encode(speed: TrafficSpeed, intervalSeconds: Double): String = listOf(
+        speed.proxyUp, speed.proxyDown,
+        speed.directUp, speed.directDown,
+        speed.otherUp, speed.otherDown,
+        (intervalSeconds * 1000).toLong()
+    ).joinToString(",")
+
+    /** Разбирает строку из [encode]; на мусор отвечает null, чтобы не ронять приём. */
+    fun decode(payload: String): Pair<TrafficSpeed, Double>? {
+        val parts = payload.split(',')
+        if (parts.size != 7) return null
+        val values = parts.map { it.trim().toLongOrNull() ?: return null }
+        return TrafficSpeed(
+            proxyUp = values[0], proxyDown = values[1],
+            directUp = values[2], directDown = values[3],
+            otherUp = values[4], otherDown = values[5]
+        ) to values[6] / 1000.0
+    }
+
     /** Сколько замеров держим для графика: при опросе раз в 3 секунды это около двух минут. */
     const val HISTORY_SIZE = 40
 

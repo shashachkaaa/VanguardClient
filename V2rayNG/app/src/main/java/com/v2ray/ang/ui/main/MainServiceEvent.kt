@@ -10,4 +10,7 @@ sealed class MainServiceEvent {
     data object MeasureConfigSuccess : MainServiceEvent()
     data class MeasureConfigNotify(val progress: String) : MainServiceEvent()
     data class MeasureConfigFinish(val finishedCount: String?) : MainServiceEvent()
+
+    /** Замер скорости, пришедший из процесса ядра. */
+    data class TrafficSpeedUpdate(val payload: String) : MainServiceEvent()
 }

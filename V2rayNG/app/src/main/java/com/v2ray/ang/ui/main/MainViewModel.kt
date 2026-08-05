@@ -15,6 +15,7 @@ import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.PingManager
+import com.v2ray.ang.handler.TrafficSpeedState
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
@@ -181,10 +182,18 @@ class MainViewModel(
                     onTestsFinished()
                 }
             }
+
+            is MainServiceEvent.TrafficSpeedUpdate -> {
+                TrafficSpeedState.decode(event.payload)?.let { (speed, interval) ->
+                    TrafficSpeedState.publish(speed, interval)
+                }
+            }
         }
     }
 
     private fun updateRunningState(isRunning: Boolean, clearTestingText: Boolean = true) {
+        // Соединения нет - показывать нечего, иначе на экране застынет последний замер
+        if (!isRunning) TrafficSpeedState.reset()
         _uiState.update { state ->
             state.copy(
                 isRunning = isRunning,

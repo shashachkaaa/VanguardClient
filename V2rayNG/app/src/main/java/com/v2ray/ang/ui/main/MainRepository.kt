@@ -65,6 +65,10 @@ class MainRepository(
                     safeIntent.getStringExtra("content")
                 )
 
+                AppConfig.MSG_TRAFFIC_SPEED -> MainServiceEvent.TrafficSpeedUpdate(
+                    safeIntent.getStringExtra("content").orEmpty()
+                )
+
                 else -> null
             }
             event?.let { _mainServiceEvent.tryEmit(it) }
