@@ -78,8 +78,11 @@ android {
             create("release") {
                 storeFile = releaseKeystore
                 storePassword = signingSecret("WARD_KEYSTORE_PASSWORD")
-                keyAlias = signingSecret("WARD_KEY_ALIAS")
+                keyAlias = signingSecret("WARD_KEY_ALIAS") ?: "ward"
+                // В PKCS12 отдельного пароля ключа нет, он совпадает с паролем
+                // хранилища - поэтому задавать его вторым секретом незачем
                 keyPassword = signingSecret("WARD_KEY_PASSWORD")
+                    ?: signingSecret("WARD_KEYSTORE_PASSWORD")
                 enableV1Signing = true
                 enableV2Signing = true
             }

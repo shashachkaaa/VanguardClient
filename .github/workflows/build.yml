@@ -127,8 +127,9 @@ jobs:
         # Пароль проверяем здесь: иначе ошибка всплывёт где-то в середине сборки
         if ! keytool -list -keystore "$KEYSTORE_PATH" \
               -storepass "$WARD_KEYSTORE_PASSWORD" \
-              -alias "$WARD_KEY_ALIAS" > /dev/null 2>&1; then
+              -alias "${WARD_KEY_ALIAS:-ward}" > /dev/null 2>&1; then
           echo "::error::Ключ не открывается: проверьте WARD_KEYSTORE_PASSWORD и WARD_KEY_ALIAS"
+          keytool -list -keystore "$KEYSTORE_PATH" -storepass "$WARD_KEYSTORE_PASSWORD" 2>&1 | head -20
           exit 1
         fi
 
