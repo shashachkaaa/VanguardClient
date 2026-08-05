@@ -154,6 +154,7 @@ val LocalDarkTheme = compositionLocalOf { false }
 @Composable
 fun AppTheme(
     darkTheme: Boolean = resolveDarkTheme(),
+    recordBackdrop: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColor else LightColor
@@ -171,16 +172,30 @@ fun AppTheme(
         }
     }
 
+    // Экран пишется в слой, чтобы диалоги, меню и снекбар могли размыть то, что под ними.
+    // Сам снекбар лежит снаружи записи - иначе он размывал бы сам себя, а это запрещено
+    val backdrop = rememberGlassBackdrop()
+
     CompositionLocalProvider(
         LocalDarkTheme provides darkTheme,
-        LocalAppSnackbar provides snackbarController
+        LocalAppSnackbar provides snackbarController,
+        LocalGlassBackdrop provides backdrop.takeIf { recordBackdrop }
     ) {
         MaterialTheme(
             colorScheme = colorScheme
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 AppSnackbarBridge(controller = snackbarController)
-                content()
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .then(
+                            if (recordBackdrop) Modifier.glassBackdropSource(backdrop)
+                            else Modifier
+                        )
+                ) {
+                    content()
+                }
                 AppSnackbarHost(hostState = snackbarController.hostState)
             }
         }

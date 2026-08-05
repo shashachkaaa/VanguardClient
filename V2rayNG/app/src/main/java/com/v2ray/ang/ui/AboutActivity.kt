@@ -9,8 +9,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
@@ -26,6 +24,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import com.v2ray.ang.ui.compose.GlassAlertDialog
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
@@ -104,7 +103,7 @@ fun AboutScreen(onBackClick: () -> Unit) {
     }
 
     if (showOssDialog) {
-        AlertDialog(
+        GlassAlertDialog(
             onDismissRequest = { showOssDialog = false },
             title = { Text(stringResource(R.string.title_oss_license)) },
             text = {
@@ -124,7 +123,6 @@ fun AboutScreen(onBackClick: () -> Unit) {
                     Text(stringResource(android.R.string.ok))
                 }
             },
-            containerColor = MaterialTheme.colorScheme.surface,
             modifier = Modifier.padding(bottom = 60.dp)
         )
     }

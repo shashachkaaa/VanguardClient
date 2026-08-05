@@ -5,9 +5,11 @@ import android.view.View
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -35,6 +37,20 @@ import androidx.compose.ui.unit.dp
 
 /** Радиус размытия фона под стеклом по умолчанию. */
 val GlassBlurRadius = 26.dp
+
+/** Форма выпадающих меню. */
+val GlassMenuShape = RoundedCornerShape(20.dp)
+
+/** Форма диалогов. */
+val GlassDialogShape = RoundedCornerShape(28.dp)
+
+/**
+ * Слой с содержимым экрана, который тема отдаёт всем всплывающим окнам.
+ *
+ * Диалоги, меню и снекбар живут в отдельных окнах и потому не попадают в запись слоя -
+ * им размытие доступно. Элементам внутри самого экрана слой отсюда брать нельзя.
+ */
+val LocalGlassBackdrop = compositionLocalOf<GlassBackdrop?> { null }
 
 /**
  * Снимок экрана, который стекло размывает у себя под низом.
@@ -134,6 +150,27 @@ fun Modifier.glassBackground(
             drawRect(tint)
         }
         .border(width = 1.dp, brush = edge, shape = shape)
+}
+
+/**
+ * Стекло для окон поверх экрана - диалогов, меню, шторок, снекбара. Слой берётся из темы,
+ * так что ставить его вручную не нужно: достаточно сделать контейнер прозрачным.
+ */
+@Composable
+fun Modifier.glassPanel(
+    shape: Shape,
+    blurRadius: Dp = GlassBlurRadius,
+    opaqueness: Float = 1.15f,
+    fallbackColor: Color? = null
+): Modifier {
+    val dense = fallbackColor ?: MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.97f)
+    return glassBackground(
+        shape = shape,
+        backdrop = LocalGlassBackdrop.current,
+        blurRadius = blurRadius,
+        opaqueness = opaqueness,
+        fallbackColor = dense
+    )
 }
 
 /**

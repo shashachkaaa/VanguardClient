@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.compose
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,7 +16,6 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarVisuals
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -190,19 +190,24 @@ fun AppSnackbarHost(
                     .padding(bottom = ToastBottomOffset + navigationBarHeight),
                 contentAlignment = Alignment.BottomCenter
             ) {
-                Surface(
+                // Плашка лежит поверх экрана, поэтому фон под ней размывается по-настоящему.
+                // Цвет типа сообщения кладётся сверху полупрозрачным слоем, чтобы стекло читалось
+                GlassSurface(
                     modifier = Modifier
                         .wrapContentWidth()
                         .widthIn(max = maxSnackbarWidth),
                     shape = RoundedCornerShape(ToastCornerRadius),
-                    color = bgColor,
-                    shadowElevation = 0.dp,
+                    backdrop = LocalGlassBackdrop.current,
+                    opaqueness = 1.1f,
+                    fallbackColor = bgColor
                 ) {
                     Row(
-                        modifier = Modifier.padding(
-                            horizontal = ToastHorizontalPad,
-                            vertical = ToastVerticalPad
-                        ),
+                        modifier = Modifier
+                            .background(bgColor)
+                            .padding(
+                                horizontal = ToastHorizontalPad,
+                                vertical = ToastVerticalPad
+                            ),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {

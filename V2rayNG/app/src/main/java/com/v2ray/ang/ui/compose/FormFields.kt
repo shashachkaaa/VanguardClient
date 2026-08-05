@@ -129,9 +129,12 @@ fun FormDropdownField(
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.verticalScrollbar(menuScrollState),
+            modifier = Modifier
+                .glassPanel(GlassMenuShape)
+                .verticalScrollbar(menuScrollState),
             scrollState = menuScrollState,
-            containerColor = MaterialTheme.colorScheme.surface
+            containerColor = Color.Transparent,
+            shadowElevation = 0.dp
         ) {
             options.forEach { option ->
                 DropdownMenuItem(

@@ -42,18 +42,15 @@ import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.dto.entities.SubscriptionCache
-import com.v2ray.ang.ui.compose.GlassBackdrop
+import com.v2ray.ang.ui.compose.GlassMenuShape
 import com.v2ray.ang.ui.compose.GlassSurface
-import com.v2ray.ang.ui.compose.glassBackground
+import com.v2ray.ang.ui.compose.glassPanel
 import com.v2ray.ang.ui.subscription.SubEditActivity
 import com.v2ray.ang.util.CustomConfigUtil
 import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-
-/** Форма выпадающего меню карточки: под стекло нужны заметно скруглённые углы. */
-private val MenuShape = RoundedCornerShape(20.dp)
 
 @Composable
 fun ChevronDown(color: Color, modifier: Modifier = Modifier) {
@@ -168,7 +165,6 @@ fun ProfileCard(
     subscription: SubscriptionCache,
     servers: List<ServersCache>,
     selectedGuid: String?,
-    backdrop: GlassBackdrop? = null,
     onAction: (MainAction) -> Unit,
     onPingProfile: (String) -> Unit,
     onUpdateSubscription: (String) -> Unit,
@@ -268,16 +264,10 @@ fun ProfileCard(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            shape = MenuShape,
+                            shape = GlassMenuShape,
                             containerColor = Color.Transparent,
                             shadowElevation = 0.dp,
-                            modifier = Modifier.glassBackground(
-                                shape = MenuShape,
-                                backdrop = backdrop,
-                                blurRadius = 30.dp,
-                                opaqueness = 1.15f,
-                                fallbackColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f)
-                            )
+                            modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Редактировать", color = MaterialTheme.colorScheme.onSurface) },

@@ -52,6 +52,9 @@ import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.colorFabActive
 import com.v2ray.ang.ui.compose.verticalScrollbar
 import com.v2ray.ang.util.Utils
+import androidx.compose.ui.graphics.Color
+import com.v2ray.ang.ui.compose.GlassMenuShape
+import com.v2ray.ang.ui.compose.glassPanel
 
 class PerAppProxyActivity : BaseComponentActivity() {
 
@@ -165,7 +168,9 @@ fun PerAppProxyScreen(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = Color.Transparent,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.menu_item_select_all)) },

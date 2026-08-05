@@ -68,6 +68,9 @@ import kotlinx.coroutines.withContext
 import java.io.File
 import java.text.DateFormat
 import java.util.Date
+import androidx.compose.ui.graphics.Color
+import com.v2ray.ang.ui.compose.GlassMenuShape
+import com.v2ray.ang.ui.compose.glassPanel
 
 class UserAssetActivity : HelperBaseComponentActivity() {
 
@@ -280,9 +283,12 @@ fun UserAssetScreen(
                         DropdownMenu(
                             expanded = showAddMenu,
                             onDismissRequest = { showAddMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface,
+                            containerColor = Color.Transparent,
+                            shadowElevation = 0.dp,
                             offset = DpOffset(x = 0.dp, y = 0.dp),
-                            modifier = Modifier.wrapContentWidth(Alignment.End)
+                            modifier = Modifier
+                                .wrapContentWidth(Alignment.End)
+                                .glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.menu_item_add_file)) },

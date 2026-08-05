@@ -38,6 +38,34 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.v2ray.ang.R
 
+/**
+ * Диалог на стекле: контейнер прозрачный, фон под окном размывается слоем из темы.
+ * Все диалоги приложения ходят через него, чтобы вид был общий.
+ */
+@Composable
+fun GlassAlertDialog(
+    onDismissRequest: () -> Unit,
+    confirmButton: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+    dismissButton: (@Composable () -> Unit)? = null,
+    icon: (@Composable () -> Unit)? = null,
+    title: (@Composable () -> Unit)? = null,
+    text: (@Composable () -> Unit)? = null
+) {
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        confirmButton = confirmButton,
+        modifier = modifier.glassPanel(GlassDialogShape),
+        dismissButton = dismissButton,
+        icon = icon,
+        title = title,
+        text = text,
+        shape = GlassDialogShape,
+        containerColor = Color.Transparent,
+        tonalElevation = 0.dp
+    )
+}
+
 @Composable
 fun ConfirmDialog(
     title: String? = null,
@@ -56,7 +84,7 @@ fun ConfirmDialog(
         else confirmFocusRequester.requestFocus()
     }
 
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = onDismiss,
         title = title?.let { { Text(it) } },
         text = { Text(message, style = MaterialTheme.typography.bodyMedium) },
@@ -79,8 +107,7 @@ fun ConfirmDialog(
                     Text(text)
                 }
             }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        }
     )
 }
 
@@ -122,7 +149,7 @@ fun InputDialog(
     onConfirm: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(title) },
         text = {
@@ -157,8 +184,7 @@ fun InputDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(dismissText) }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        }
     )
 }
 
@@ -168,7 +194,7 @@ fun QRCodeDialog(
     onDismiss: () -> Unit
 ) {
     if (bitmap == null) return
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = onDismiss,
         text = {
             Image(
@@ -181,8 +207,7 @@ fun QRCodeDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.action_close)) }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        }
     )
 }
 
@@ -202,7 +227,7 @@ fun SelectListDialog(
 ) {
     val selectedIndex = if (showRadio) options.indexOf(selectedOption) else -1
 
-    AlertDialog(
+    GlassAlertDialog(
         onDismissRequest = onDismiss,
         title = title?.let { { Text(it) } },
         text = {
@@ -240,7 +265,6 @@ fun SelectListDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(android.R.string.cancel))
             }
-        },
-        containerColor = MaterialTheme.colorScheme.surface
+        }
     )
 }

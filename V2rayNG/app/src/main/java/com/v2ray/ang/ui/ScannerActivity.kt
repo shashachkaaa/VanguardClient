@@ -79,6 +79,10 @@ class ScannerActivity : HelperBaseComponentActivity() {
 
     private val uiState = mutableStateOf(ScannerUiState.IDLE)
 
+    // Видоискатель рисует внешняя поверхность камеры - в слой она не попадёт,
+    // а превью может почернеть, поэтому фон для стекла тут не пишем
+    override val recordGlassBackdrop: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         startScan()

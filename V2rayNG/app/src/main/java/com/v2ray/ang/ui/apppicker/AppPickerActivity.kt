@@ -15,7 +15,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
@@ -37,6 +36,10 @@ import com.v2ray.ang.ui.compose.AppListItem
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.verticalScrollbar
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import com.v2ray.ang.ui.compose.GlassMenuShape
+import com.v2ray.ang.ui.compose.glassPanel
 
 class AppPickerActivity : BaseComponentActivity() {
 
@@ -159,7 +162,9 @@ fun AppPickerScreen(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = Color.Transparent,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.menu_item_select_all)) },

@@ -20,11 +20,17 @@ abstract class BaseComponentActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AppTheme {
+            AppTheme(recordBackdrop = recordGlassBackdrop) {
                 ScreenContent()
             }
         }
     }
+
+    /**
+     * Писать ли экран в слой для стекла. Экранам с внешней поверхностью - камера,
+     * видео - это ломает вывод: их картинку рисует не приложение, и в слой она не попадает.
+     */
+    protected open val recordGlassBackdrop: Boolean = true
 
     @Composable
     protected abstract fun ScreenContent()

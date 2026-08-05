@@ -44,8 +44,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import com.v2ray.ang.R
-import com.v2ray.ang.ui.compose.GlassBackdrop
 import com.v2ray.ang.ui.compose.GlassSurface
+import com.v2ray.ang.ui.compose.LocalGlassBackdrop
 import com.v2ray.ang.ui.compose.glassBackdropSource
 import com.v2ray.ang.ui.compose.rememberGlassBackdrop
 
@@ -227,7 +227,6 @@ fun MainScreen(
                                 subscription = subCache,
                                 servers = servers,
                                 selectedGuid = uiState.selectedGuid,
-                                backdrop = backdrop,
                                 onAction = onAction,
                                 onPingProfile = { guid -> 
                                     onAction(MainAction.SelectGroup(guid))
@@ -271,7 +270,6 @@ fun MainScreen(
 
         if (showImportMenu) {
             ImportSheet(
-                backdrop = backdrop,
                 onDismiss = { mainViewModel.showImportSheet.value = false },
                 onAction = { action ->
                     mainViewModel.showImportSheet.value = false
@@ -553,7 +551,6 @@ private fun ActionChip(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ImportSheet(
-    backdrop: GlassBackdrop,
     onDismiss: () -> Unit,
     onAction: (MainAction) -> Unit
 ) {
@@ -572,10 +569,9 @@ private fun ImportSheet(
         GlassSurface(
             modifier = Modifier.fillMaxWidth(),
             shape = sheetShape,
-            backdrop = backdrop,
+            backdrop = LocalGlassBackdrop.current,
             blurRadius = 34.dp,
-            opaqueness = 1.15f,
-            fallbackColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.96f)
+            opaqueness = 1.15f
         ) {
             Column(
                 modifier = Modifier

@@ -68,6 +68,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import sh.calvin.reorderable.ReorderableItem
 import sh.calvin.reorderable.rememberReorderableLazyListState
+import androidx.compose.ui.graphics.Color
+import com.v2ray.ang.ui.compose.GlassMenuShape
+import com.v2ray.ang.ui.compose.glassPanel
 
 class RoutingSettingActivity : HelperBaseComponentActivity() {
     private val viewModel: RoutingSettingsViewModel by viewModels()
@@ -225,7 +228,9 @@ fun RoutingSettingScreen(
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            containerColor = MaterialTheme.colorScheme.surface
+                            containerColor = Color.Transparent,
+                            shadowElevation = 0.dp,
+                            modifier = Modifier.glassPanel(GlassMenuShape)
                         ) {
                             DropdownMenuItem(
                                 text = { Text(stringResource(R.string.routing_settings_import_predefined_rulesets)) },

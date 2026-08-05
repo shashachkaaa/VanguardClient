@@ -7,8 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
@@ -21,6 +19,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.ui.compose.GlassAlertDialog
 import com.v2ray.ang.BuildConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.core.CoreNativeManager
@@ -96,7 +95,7 @@ fun CheckUpdateScreen(
 
     if (showUpdateDialog && updateResult != null) {
         val result = updateResult!!
-        AlertDialog(
+        GlassAlertDialog(
             onDismissRequest = { viewModel.dismissUpdateDialog() },
             title = { Text(stringResource(R.string.update_new_version_found, result.latestVersion ?: "")) },
             text = { Text(result.releaseNotes ?: "") },
@@ -112,8 +111,7 @@ fun CheckUpdateScreen(
                 TextButton(onClick = { viewModel.dismissUpdateDialog() }) {
                     Text(stringResource(android.R.string.cancel))
                 }
-            },
-            containerColor = MaterialTheme.colorScheme.surface
+            }
         )
     }
 }
