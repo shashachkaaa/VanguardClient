@@ -117,6 +117,10 @@ fun MainScreen(
     val hours = (uptime / (1000 * 60 * 60))
     val timeString = "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 
+    // Свёрнутые карточки: «Скрыть все» прячет списки серверов, шапки остаются
+    var collapsedGuids by rememberSaveable { mutableStateOf(listOf<String>()) }
+    val allCollapsed = subscriptions.isNotEmpty() && collapsedGuids.size >= subscriptions.size
+
     // Стекло размывает именно то, что под ним, поэтому экран пишется в слой
     val backdrop = rememberGlassBackdrop()
 
@@ -160,8 +164,14 @@ fun MainScreen(
                         onClick = { onAction(MainAction.TestCurrentServer) }
                     )
                     ActionChip(
-                        text = "Скрыть все",
-                        onClick = { }
+                        text = if (allCollapsed) "Показать все" else "Скрыть все",
+                        onClick = {
+                            collapsedGuids = if (allCollapsed) {
+                                emptyList()
+                            } else {
+                                subscriptions.map { it.guid }
+                            }
+                        }
                     )
                 }
 
@@ -227,6 +237,14 @@ fun MainScreen(
                                 subscription = subCache,
                                 servers = servers,
                                 selectedGuid = uiState.selectedGuid,
+                                expanded = subCache.guid !in collapsedGuids,
+                                onToggleExpanded = {
+                                    collapsedGuids = if (subCache.guid in collapsedGuids) {
+                                        collapsedGuids - subCache.guid
+                                    } else {
+                                        collapsedGuids + subCache.guid
+                                    }
+                                },
                                 onAction = onAction,
                                 onPingProfile = { guid -> 
                                     onAction(MainAction.SelectGroup(guid))

@@ -4,7 +4,12 @@ import android.content.Context
 import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -29,6 +34,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -165,6 +171,8 @@ fun ProfileCard(
     subscription: SubscriptionCache,
     servers: List<ServersCache>,
     selectedGuid: String?,
+    expanded: Boolean = true,
+    onToggleExpanded: () -> Unit = {},
     onAction: (MainAction) -> Unit,
     onPingProfile: (String) -> Unit,
     onUpdateSubscription: (String) -> Unit,
@@ -210,29 +218,49 @@ fun ProfileCard(
             Column(modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 14.dp)) {
                 
                 Row(
-                    verticalAlignment = Alignment.CenterVertically, 
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    ChevronDown(color = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(8.dp))
-                    
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            text = title, 
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            fontWeight = FontWeight.ExtraBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
+                    // Шапка сворачивает свой список; стрелка показывает, куда он поедет
+                    val chevronRotation by animateFloatAsState(
+                        targetValue = if (expanded) 0f else -90f,
+                        animationSpec = tween(220),
+                        label = "chevronRotation"
+                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(RoundedCornerShape(12.dp))
+                            .clickable(onClick = onToggleExpanded)
+                            .padding(vertical = 2.dp)
+                    ) {
+                        ChevronDown(
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier
+                                .size(14.dp)
+                                .graphicsLayer { rotationZ = chevronRotation }
                         )
-                        Text(
-                            text = updateStatus, 
-                            fontSize = 9.sp, 
-                            color = MaterialTheme.colorScheme.onSurfaceVariant, 
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Spacer(Modifier.width(8.dp))
+
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = title, 
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.ExtraBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = updateStatus,
+                                fontSize = 9.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
-                    
+
                     // Обновление и пинг живут в общей стеклянной таблетке.
                     // Слой сюда передавать нельзя: карточка сама пишется в него
                     GlassSurface(
@@ -355,6 +383,12 @@ fun ProfileCard(
             }
         }
         
+        AnimatedVisibility(
+            visible = expanded,
+            enter = expandVertically(animationSpec = tween(220)) + fadeIn(animationSpec = tween(220)),
+            exit = shrinkVertically(animationSpec = tween(220)) + fadeOut(animationSpec = tween(160))
+        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
         servers.forEach { serverCache ->
             val isSelected = serverCache.guid == selectedGuid
             
@@ -504,6 +538,8 @@ fun ProfileCard(
                     }
                 }
             }
+        }
+        }
         }
     }
 }

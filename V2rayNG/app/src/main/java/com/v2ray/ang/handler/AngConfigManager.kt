@@ -620,10 +620,13 @@ object AngConfigManager {
                 // Игнорируем ошибки парсинга старых заголовков
             }
 
-            // Добавляем обязательные для Remnawave параметры
+            // Добавляем обязательные для Remnawave параметры.
+            // x-ver-os панель показывает как «версия ОС»: без него там «Неизвестно»
             headersMap["x-hwid"] = hwid
             headersMap["x-device-os"] = "Android"
+            headersMap["x-ver-os"] = android.os.Build.VERSION.RELEASE ?: android.os.Build.VERSION.SDK_INT.toString()
             headersMap["x-device-model"] = android.os.Build.MODEL ?: "Android"
+            headersMap["x-user-agent"] = HttpUtil.defaultUserAgent()
 
             // Переводим обратно в JSON-строку, которую ожидает UrlContentRequest
             val finalHeadersJson = try {
@@ -727,6 +730,25 @@ object AngConfigManager {
             val supportUrlRaw = responseHeaders["support-url"]
             it.subscription.supportUrl = supportUrlRaw ?: ""
 
+            // --- ОБРАБОТКА profile-update-interval ---
+            // Сервер присылает интервал в часах ("1"), а храним мы его в минутах.
+            // Дробные значения тоже встречаются, поэтому читаем как число с плавающей точкой
+            var intervalChanged = false
+            val updateIntervalRaw = responseHeaders["profile-update-interval"]
+            if (!updateIntervalRaw.isNullOrBlank()) {
+                val hours = updateIntervalRaw.trim().toDoubleOrNull()
+                if (hours != null && hours > 0) {
+                    val minutes = (hours * 60).toLong().coerceAtLeast(1L)
+                    if (minutes != it.subscription.updateInterval) {
+                        it.subscription.updateInterval = minutes
+                        intervalChanged = true
+                        LogUtil.i(AppConfig.TAG, "Subscription update interval from header: $hours h")
+                    }
+                } else {
+                    LogUtil.w(AppConfig.TAG, "Bad profile-update-interval header: $updateIntervalRaw")
+                }
+            }
+
             // --- ОБРАБОТКА subscription-userinfo (Трафик и дата) ---
             val userInfoRaw = responseHeaders["subscription-userinfo"]
             if (!userInfoRaw.isNullOrEmpty()) {
@@ -758,6 +780,11 @@ object AngConfigManager {
             if (count > 0) {
                 it.subscription.lastUpdated = System.currentTimeMillis()
                 MmkvManager.encodeSubscription(it.guid, it.subscription)
+                // Новый интервал из заголовка нужно донести до планировщика,
+                // иначе задача так и будет ходить по старому расписанию
+                if (intervalChanged && it.subscription.autoUpdate) {
+                    SubscriptionUpdater.syncOne(subId = it.guid)
+                }
                 LogUtil.i(AppConfig.TAG, "Subscription updated: ${it.subscription.remarks}, $count configs")
                 return SubscriptionUpdateResult(
                     configCount = count,

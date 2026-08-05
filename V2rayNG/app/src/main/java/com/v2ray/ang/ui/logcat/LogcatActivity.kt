@@ -28,10 +28,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -149,14 +149,12 @@ fun LogcatScreen(
         }
     }
 
-    // Ручная прокрутка вверх выключает следование, чтобы список не выдёргивало
+    // Следование выключает только живое перетаскивание пальцем. По isScrollInProgress
+    // ориентироваться нельзя: наша же прокрутка к концу считалась ручной и гасила себя
     LaunchedEffect(listState) {
-        snapshotFlow { listState.isScrollInProgress to listState.layoutInfo }
-            .collect { (scrolling, info) ->
-                if (!scrolling) return@collect
-                val lastVisible = info.visibleItemsInfo.lastOrNull()?.index ?: return@collect
-                if (lastVisible < info.totalItemsCount - 3) autoScroll = false
-            }
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) autoScroll = false
+        }
     }
 
     // Follow the log only while the screen is in front of the user
@@ -227,9 +225,15 @@ fun LogcatScreen(
             )
         },
         floatingActionButton = {
-            // Следование за концом лога: пока включено, список сам едет вниз
+            // Кнопка всегда листает в конец и включает следование.
+            // Выключается оно само - когда лог оттянут пальцем вверх
             FloatingActionButton(
-                onClick = { autoScroll = !autoScroll },
+                onClick = {
+                    autoScroll = true
+                    scope.launch {
+                        if (logs.isNotEmpty()) listState.animateScrollToItem(logs.lastIndex)
+                    }
+                },
                 containerColor = if (autoScroll) {
                     MaterialTheme.colorScheme.primary
                 } else {

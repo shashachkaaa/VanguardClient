@@ -134,6 +134,13 @@ object HttpUtil {
     }
 
     /**
+     * User-Agent приложения: имя клиента, версия и версия Android.
+     * Панели подписок разбирают отсюда клиента и систему, поэтому версия ОС здесь нужна.
+     */
+    fun defaultUserAgent(): String =
+        "VanguardClient/${BuildConfig.VERSION_NAME} (Android ${android.os.Build.VERSION.RELEASE})"
+
+    /**
      * Retrieves the content of a URL as a string with a custom User-Agent header.
      *
      * @param url The URL to fetch content from.
@@ -152,7 +159,7 @@ object HttpUtil {
             if (currentUrl == null) continue
             val client = buildOkHttpClient(request.timeout, request.httpPort, request.proxyUsername, request.proxyPassword, followRedirects = false)
             val finalUserAgent = if (request.userAgent.isNullOrBlank()) {
-                "v2rayNG/${BuildConfig.VERSION_NAME}"
+                defaultUserAgent()
             } else {
                 request.userAgent
             }

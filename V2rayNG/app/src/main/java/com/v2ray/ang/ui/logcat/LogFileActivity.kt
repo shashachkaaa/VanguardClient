@@ -31,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.interaction.DragInteraction
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.core.content.FileProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -132,12 +134,20 @@ fun LogFileScreen(
     val lines by viewModel.lines.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
     var autoScroll by rememberSaveable { mutableStateOf(true) }
 
     // Файл дописывается на ходу, поэтому список подматывается к концу
     LaunchedEffect(lines.size, autoScroll) {
         if (autoScroll && lines.isNotEmpty()) {
             listState.animateScrollToItem(lines.lastIndex)
+        }
+    }
+
+    // Следование гасит только перетаскивание пальцем, но не наша же прокрутка
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) autoScroll = false
         }
     }
 
@@ -152,7 +162,12 @@ fun LogFileScreen(
         contentWindowInsets = ScaffoldDefaults.contentWindowInsets,
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { autoScroll = !autoScroll },
+                onClick = {
+                    autoScroll = true
+                    scope.launch {
+                        if (lines.isNotEmpty()) listState.animateScrollToItem(lines.lastIndex)
+                    }
+                },
                 containerColor = if (autoScroll) {
                     MaterialTheme.colorScheme.primary
                 } else {
