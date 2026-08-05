@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.snapshotFlow
 import com.tencent.mmkv.MMKV
 import com.v2ray.ang.AppConfig.DEFAULT_SUBSCRIPTION_ID
+import com.v2ray.ang.AppConfig.STANDALONE_SUBSCRIPTION_ID
 import com.v2ray.ang.AppConfig.PREF_IS_BOOTED
 import com.v2ray.ang.AppConfig.PREF_ROUTING_RULESET
 import com.v2ray.ang.dto.entities.AssetUrlCache
@@ -129,6 +130,10 @@ object MmkvManager {
         if (!subsList.contains(DEFAULT_SUBSCRIPTION_ID)) {
             allServers.addAll(decodeServerList(DEFAULT_SUBSCRIPTION_ID))
         }
+
+        // Сервера, добавленные ключом: своей подписки у них нет, но в общий список
+        // они входят - иначе их не увидят ни проверка всех, ни экспорт
+        allServers.addAll(decodeServerList(STANDALONE_SUBSCRIPTION_ID))
 
         // Add servers from all subscriptions
         subsList.forEach { guid ->
@@ -327,6 +332,7 @@ object MmkvManager {
         decodeSubscriptions().forEach { sub ->
             encodeServerList(mutableListOf(), sub.guid)
         }
+        encodeServerList(mutableListOf(), STANDALONE_SUBSCRIPTION_ID)
         return count
     }
 

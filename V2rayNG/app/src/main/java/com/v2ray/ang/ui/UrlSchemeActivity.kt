@@ -131,7 +131,7 @@ class UrlSchemeActivity : BaseComponentActivity() {
             val (count, countSub) = try {
                 // Дописываем к тому, что уже есть: с заменой каждый импорт ключа
                 // стирал бы все добавленные до него
-                AngConfigManager.importBatchConfig(url, "", true)
+                AngConfigManager.importBatchConfig(url, AppConfig.STANDALONE_SUBSCRIPTION_ID, true)
             } catch (e: Exception) {
                 LogUtil.e(AppConfig.TAG, "Failed to import from url scheme", e)
                 0 to 0

@@ -19,6 +19,13 @@ object AppConfig {
     // Default subscription ID for ungrouped servers
     const val DEFAULT_SUBSCRIPTION_ID = "__default_subscription__"
 
+    /**
+     * Сервера, добавленные ключом. Своя корзина, а не общая «дефолтная» подписка:
+     * в ту годами складывали всё, у чего не было подписки, и показывать её как
+     * список добавленных вручную нельзя - там лежит чужое.
+     */
+    const val STANDALONE_SUBSCRIPTION_ID = "__standalone_servers__"
+
     /** Preferences mapped to MMKV storage. */
     const val PREF_SNIFFING_ENABLED = "pref_sniffing_enabled"
     const val PREF_ROUTE_ONLY_ENABLED = "pref_route_only_enabled"

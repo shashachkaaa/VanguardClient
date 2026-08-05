@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
 import com.v2ray.ang.extension.toastError
 import com.v2ray.ang.extension.toastSuccess
@@ -28,7 +29,11 @@ class ScScannerActivity : HelperBaseComponentActivity() {
         launchQRCodeScanner { scanResult ->
             if (scanResult != null) {
                 // Дописываем к уже добавленным ключам, а не заменяем их
-                val (count, countSub) = AngConfigManager.importBatchConfig(scanResult, "", true)
+                val (count, countSub) = AngConfigManager.importBatchConfig(
+                    scanResult,
+                    AppConfig.STANDALONE_SUBSCRIPTION_ID,
+                    true
+                )
 
                 if (count + countSub > 0) {
                     toastSuccess(R.string.toast_success)

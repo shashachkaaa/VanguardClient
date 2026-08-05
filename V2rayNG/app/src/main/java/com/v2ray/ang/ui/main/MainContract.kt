@@ -1,13 +1,11 @@
 package com.v2ray.ang.ui.main
 
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.LocateTarget
 
-/**
- * Группа серверов, добавленных ключом, а не подпиской. Пустой идентификатор -
- * это то, чем хранилище и так помечает профили без подписки.
- */
-const val STANDALONE_GROUP_ID = ""
+/** Группа серверов, добавленных ключом, а не подпиской. */
+const val STANDALONE_GROUP_ID = AppConfig.STANDALONE_SUBSCRIPTION_ID
 
 /**
  * Main UI state

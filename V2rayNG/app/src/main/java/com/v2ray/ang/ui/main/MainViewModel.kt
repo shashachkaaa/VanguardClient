@@ -64,11 +64,6 @@ class MainViewModel(
     private val _subscriptions = MutableStateFlow<List<SubscriptionCache>>(emptyList())
     val subscriptions: StateFlow<List<SubscriptionCache>> = _subscriptions.asStateFlow()
 
-    private val _hasStandaloneServers = MutableStateFlow(false)
-
-    /** Есть ли сервера, добавленные ключом: от этого зависит, рисовать ли их раздел. */
-    val hasStandaloneServers: StateFlow<Boolean> = _hasStandaloneServers.asStateFlow()
-
     val isImporting = MutableStateFlow(false)
     val importError = MutableStateFlow<String?>(null)
 
@@ -472,11 +467,13 @@ class MainViewModel(
                 _subscriptions.value = subs
 
                 // Сервера, добавленные ключом, живут отдельной группой впереди подписок.
-                // Пустой её не делаем: показывать нечего
-                val hasStandalone = dataSource.getServerGuidList(STANDALONE_GROUP_ID).isNotEmpty()
-                _hasStandaloneServers.value = hasStandalone
+                // Читаем её всегда, даже пустую: иначе поток, на который подписан экран,
+                // выбрасывался бы из списка и первый добавленный ключ появлялся бы
+                // только после перезапуска
+                val standalone = loadGroup(STANDALONE_GROUP_ID, forceRefresh)
+                updateGroupUi(STANDALONE_GROUP_ID, standalone)
 
-                val standaloneGroup = if (hasStandalone) {
+                val standaloneGroup = if (standalone.isNotEmpty()) {
                     listOf(GroupMapItem(id = STANDALONE_GROUP_ID, remarks = ""))
                 } else {
                     emptyList()
@@ -485,6 +482,7 @@ class MainViewModel(
                         subs.map { GroupMapItem(id = it.guid, remarks = it.subscription.remarks) }
                 val selectedGroup = resolveSelectedGroup(groups)
                 val validIds = groups.mapTo(HashSet()) { it.id }
+                validIds.add(STANDALONE_GROUP_ID)
                 groupPageFlows.keys.removeAll { it !in validIds }
                 groupLoadMutexes.keys.removeAll { it !in validIds }
 
@@ -541,7 +539,8 @@ class MainViewModel(
                 try {
                     // Одиночный ключ - отдельный сервер, а не часть подписки: положив его
                     // в подписку, мы бы стёрли его первым же её обновлением
-                    val (count, countSub) = dataSource.importBatchConfig(configText, "", true)
+                    val (count, countSub) =
+                        dataSource.importBatchConfig(configText, STANDALONE_GROUP_ID, true)
 
                     // Новую подписку уже подтянул сам импорт; здесь остаётся случай,
                     // когда адрес был знаком - тогда просто обновляем всё

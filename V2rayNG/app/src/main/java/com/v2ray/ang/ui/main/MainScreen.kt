@@ -185,8 +185,7 @@ fun MainScreen(
     // Сервера, добавленные ключом: свой раздел над подписками, пустым не показывается
     val standaloneServers by remember { mainViewModel.serversForGroup(STANDALONE_GROUP_ID) }
         .collectAsStateWithLifecycle(initialValue = emptyList())
-    val hasStandalone by mainViewModel.hasStandaloneServers.collectAsStateWithLifecycle()
-    val showStandalone = hasStandalone && standaloneServers.isNotEmpty()
+    val showStandalone = standaloneServers.isNotEmpty()
 
     // Свёрнутые карточки: «Скрыть все» прячет списки серверов, шапки остаются
     var collapsedGuids by rememberSaveable { mutableStateOf(listOf<String>()) }

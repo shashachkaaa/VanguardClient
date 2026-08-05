@@ -683,11 +683,10 @@ object AngConfigManager {
                     }
                 }
                 
-                // Обновляем имя, только если оно дефолтное или пустое (чтобы не сбросить кастомное имя)
-                if (!parsedTitle.isNullOrBlank()) {
-                    if (it.subscription.remarks.isNullOrBlank() || it.subscription.remarks == "import sub") {
-                        it.subscription.remarks = parsedTitle
-                    }
+                // Обновляем имя, только если его не задавал пользователь,
+                // иначе своё название подписки слетало бы при каждом обновлении
+                if (!parsedTitle.isNullOrBlank() && isGeneratedRemarks(it.subscription)) {
+                    it.subscription.remarks = parsedTitle
                 }
             }
             // ------------------------------------------
@@ -841,6 +840,27 @@ object AngConfigManager {
         return count
     }
 
+    /** Имя подписки до первого ответа сервера, если в ссылке нет ни якоря, ни хоста. */
+    private const val PLACEHOLDER_REMARKS = "import sub"
+
+    /**
+     * Своё ли имя у подписки: пока оно совпадает с тем, что подставили мы сами
+     * (якорь ссылки, адрес или заглушка), название с сервера его заменяет.
+     * Как только пользователь переименовал подписку, оно остаётся за ним.
+     */
+    private fun isGeneratedRemarks(subscription: SubscriptionItem): Boolean {
+        val remarks = subscription.remarks
+        if (remarks.isBlank() || remarks == PLACEHOLDER_REMARKS) return true
+
+        return try {
+            val uri = URI(Utils.fixIllegalUrl(subscription.url))
+            remarks == uri.host || remarks == uri.fragment
+        } catch (e: Exception) {
+            LogUtil.e(AppConfig.TAG, "Failed to check subscription remarks", e)
+            false
+        }
+    }
+
     /**
      * Imports a URL as a subscription.
      *
@@ -860,7 +880,7 @@ object AngConfigManager {
         // «import sub» мелькал на экране до первого ответа сервера
         subItem.remarks = uri.fragment?.takeIf { it.isNotBlank() }
             ?: uri.host?.takeIf { it.isNotBlank() }
-                    ?: "import sub"
+                    ?: PLACEHOLDER_REMARKS
         subItem.url = url
         MmkvManager.encodeSubscription("", subItem)
         return 1
