@@ -176,6 +176,9 @@ class MainActivity : HelperBaseComponentActivity() {
     private fun handleLayoutTestClick() {
         if (mainViewModel.uiState.value.isRunning) {
             mainViewModel.testCurrentServerRealPing()
+        } else {
+            // Раньше кнопка молчала: без подключения замерять нечего
+            toast(R.string.connection_test_fail)
         }
     }
 

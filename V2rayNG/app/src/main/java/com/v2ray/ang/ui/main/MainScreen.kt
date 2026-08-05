@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
@@ -43,8 +44,16 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
+import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
+import com.v2ray.ang.extension.toSpeedString
+import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
+import com.v2ray.ang.handler.TrafficSpeed
+import com.v2ray.ang.handler.TrafficSpeedState
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import com.v2ray.ang.ui.compose.GlassSurface
+import com.v2ray.ang.ui.compose.QRCodeDialog
 import com.v2ray.ang.ui.compose.ResumePauseEffect
 import com.v2ray.ang.ui.compose.LocalGlassBackdrop
 import com.v2ray.ang.ui.compose.glassBackdropSource
@@ -118,6 +127,22 @@ fun MainScreen(
     val hours = (uptime / (1000 * 60 * 60))
     val timeString = "${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
 
+    val haptics = LocalHapticFeedback.current
+
+    // Отклик на смену состояния: подключились или отвалились - это чувствуется рукой
+    var lastRunning by remember { mutableStateOf(uiState.isRunning) }
+    LaunchedEffect(uiState.isRunning) {
+        if (uiState.isRunning != lastRunning) {
+            lastRunning = uiState.isRunning
+            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+        }
+    }
+
+    // Скорость считает служба для уведомления, здесь только показываем.
+    // Без включённой статистики ядро её не отдаёт, поэтому строку прячем
+    val speed by TrafficSpeedState.speed.collectAsStateWithLifecycle()
+    val speedEnabled by rememberMmkvBool(AppConfig.PREF_SPEED_ENABLED, false)
+
     // Пузырёк капсулы. Из настроек он должен приехать с шестерёнки, а не оказаться
     // на «Главной» мгновенно, поэтому при возврате панель пересобирается уже с
     // подсветкой на настройках, а следом уезжает на место
@@ -171,9 +196,15 @@ fun MainScreen(
                     isConnecting = isConnecting,
                     timeString = timeString,
                     onClick = {
+                        haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                         isConnecting = true
                         onAction(MainAction.ToggleService)
                     }
+                )
+
+                SpeedRow(
+                    visible = uiState.isRunning && speedEnabled,
+                    speed = speed
                 )
 
                 // Действия под кнопкой оформлены чипами, а не голым текстом
@@ -338,8 +369,17 @@ fun MainScreen(
         TopProgressBanner(
             visible = uiState.isTesting && !isImporting,
             text = uiState.statusText,
-            modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp)
+            modifier = Modifier.align(Alignment.TopCenter).padding(top = 32.dp),
+            onCancel = { onAction(MainAction.CancelTesting) }
         )
+
+        // QR-код сервера: битмап готовит модель по действию из меню строки
+        uiState.shareQRCodeBitmap?.let { bitmap ->
+            QRCodeDialog(
+                bitmap = bitmap,
+                onDismiss = { onAction(MainAction.DismissQRCodeDialog) }
+            )
+        }
 
         AnimatedVisibility(
             visible = importError != null,
@@ -363,6 +403,17 @@ fun MainScreen(
     }
 }
 
+/** Крестик в том же проволочном стиле, что и остальные рисованные иконки. */
+@Composable
+private fun CrossIcon(color: Color, modifier: Modifier = Modifier) {
+    Canvas(modifier = modifier) {
+        val w = size.width
+        val h = size.height
+        drawLine(color, Offset(0f, 0f), Offset(w, h), strokeWidth = 4f, cap = StrokeCap.Round)
+        drawLine(color, Offset(w, 0f), Offset(0f, h), strokeWidth = 4f, cap = StrokeCap.Round)
+    }
+}
+
 /**
  * Pill that slides in from the top while a long running task is in progress.
  */
@@ -370,7 +421,8 @@ fun MainScreen(
 private fun TopProgressBanner(
     visible: Boolean,
     text: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onCancel: (() -> Unit)? = null
 ) {
     AnimatedVisibility(
         visible = visible,
@@ -399,6 +451,15 @@ private fun TopProgressBanner(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                if (onCancel != null) {
+                    Spacer(Modifier.width(10.dp))
+                    IconButton(onClick = onCancel, modifier = Modifier.size(22.dp)) {
+                        CrossIcon(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(12.dp)
+                        )
+                    }
+                }
             }
         }
     }
@@ -555,6 +616,57 @@ private fun PowerButton(
 /**
  * Небольшой чип-действие: мягкая подложка, отклик на нажатие.
  */
+@Composable
+/**
+ * Скорость под кнопкой: приходит из того же замера, что и уведомление.
+ */
+@Composable
+private fun SpeedRow(
+    visible: Boolean,
+    speed: TrafficSpeed
+) {
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+        exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(bottom = 10.dp)
+        ) {
+            SpeedValue(down = true, value = speed.totalDown)
+            SpeedValue(down = false, value = speed.totalUp)
+        }
+    }
+}
+
+@Composable
+private fun SpeedValue(down: Boolean, value: Long) {
+    val color = if (value > 0) {
+        MaterialTheme.colorScheme.primary
+    } else {
+        MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val tint by animateColorAsState(color, tween(400), label = "speedTint")
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Text(
+            text = if (down) "↓" else "↑",
+            color = tint,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Black
+        )
+        Spacer(Modifier.width(5.dp))
+        Text(
+            text = value.toSpeedString(),
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
 @Composable
 private fun ActionChip(
     text: String,

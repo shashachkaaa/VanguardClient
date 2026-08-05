@@ -12,6 +12,7 @@ import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.matchesPattern
+import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.handler.MmkvManager
 import com.v2ray.ang.handler.PingManager
 import com.v2ray.ang.handler.SettingsManager
@@ -144,6 +145,11 @@ class MainViewModel(
             MainServiceEvent.StateStopSuccess -> updateRunningState(false)
             is MainServiceEvent.MeasureDelaySuccess -> {
                 _uiState.update { it.copy(statusText = event.content) }
+                // Результат ручной проверки виден только в баннере теста,
+                // а он к этому моменту уже скрыт - показываем плашкой
+                if (!uiState.value.isTesting && event.content.isNotBlank()) {
+                    AppSnackbarManager.show(event.content)
+                }
             }
             MainServiceEvent.MeasureConfigSuccess -> {
                 viewModelScope.launch(ioDispatcher) {

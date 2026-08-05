@@ -16,12 +16,12 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
@@ -36,7 +36,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -48,6 +50,8 @@ import com.v2ray.ang.R
 import com.v2ray.ang.dto.entities.ProfileItem
 import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.dto.entities.SubscriptionCache
+import com.v2ray.ang.ui.compose.DeleteConfirmDialog
+import com.v2ray.ang.ui.compose.colorPingSlow
 import com.v2ray.ang.ui.compose.GlassMenuShape
 import com.v2ray.ang.ui.compose.GlassSurface
 import com.v2ray.ang.ui.compose.glassPanel
@@ -166,6 +170,7 @@ fun getProtocolDescription(context: Context, profile: ProfileItem, guid: String)
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun ProfileCard(
     subscription: SubscriptionCache,
@@ -369,6 +374,39 @@ fun ProfileCard(
                     }
                 }
                 
+                // Полоса заполнения лимита: без лимита её не рисуем - показывать нечего
+                if (sub.trafficTotal > 0L) {
+                    val usedFraction = (usedTraffic.toFloat() / sub.trafficTotal).coerceIn(0f, 1f)
+                    val barFraction by animateFloatAsState(
+                        targetValue = usedFraction,
+                        animationSpec = tween(600),
+                        label = "trafficBar"
+                    )
+                    val barColor = when {
+                        usedFraction >= 0.9f -> MaterialTheme.colorScheme.error
+                        usedFraction >= 0.75f -> colorPingSlow
+                        else -> MaterialTheme.colorScheme.primary
+                    }
+                    val barTint by animateColorAsState(barColor, tween(400), label = "trafficBarColor")
+
+                    Spacer(Modifier.height(10.dp))
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(5.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f))
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(barFraction)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .background(barTint)
+                        )
+                    }
+                }
+
                 if (announceText.isNotBlank()) {
                     Spacer(Modifier.height(8.dp))
                     Text(
@@ -424,6 +462,20 @@ fun ProfileCard(
                 label = "serverAccent"
             )
 
+            // Долгое нажатие открывает действия над сервером
+            var showServerMenu by remember(serverCache.guid) { mutableStateOf(false) }
+            var confirmDelete by remember(serverCache.guid) { mutableStateOf(false) }
+            val haptics = LocalHapticFeedback.current
+
+            if (confirmDelete) {
+                DeleteConfirmDialog(
+                    message = serverCache.profile.remarks,
+                    onConfirm = { onAction(MainAction.RemoveServer(serverCache.guid)) },
+                    onDismiss = { confirmDelete = false }
+                )
+            }
+
+            Box {
             Card(
                 shape = RoundedCornerShape(18.dp),
                 colors = CardDefaults.cardColors(containerColor = containerColor),
@@ -432,10 +484,14 @@ fun ProfileCard(
                     .fillMaxWidth()
                     .padding(vertical = 3.dp)
                     .scale(cardScale)
-                    .clickable(
+                    .combinedClickable(
                         interactionSource = interactionSource,
                         indication = ripple(),
-                        onClick = { onSelectServer(serverCache.guid) }
+                        onClick = { onSelectServer(serverCache.guid) },
+                        onLongClick = {
+                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                            showServerMenu = true
+                        }
                     )
             ) {
                 Row(
@@ -532,34 +588,46 @@ fun ProfileCard(
                         modifier = Modifier.size(32.dp)
                     ) {
                         ChevronRight(
-                            color = MaterialTheme.colorScheme.outlineVariant, 
+                            color = MaterialTheme.colorScheme.outlineVariant,
                             modifier = Modifier.size(14.dp)
                         )
                     }
                 }
             }
+
+            DropdownMenu(
+                expanded = showServerMenu,
+                onDismissRequest = { showServerMenu = false },
+                shape = GlassMenuShape,
+                containerColor = Color.Transparent,
+                shadowElevation = 0.dp,
+                modifier = Modifier.glassPanel(GlassMenuShape)
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Поделиться ссылкой", color = MaterialTheme.colorScheme.onSurface) },
+                    onClick = {
+                        showServerMenu = false
+                        onAction(MainAction.ShareClipboard(serverCache.guid))
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("QR-код", color = MaterialTheme.colorScheme.onSurface) },
+                    onClick = {
+                        showServerMenu = false
+                        onAction(MainAction.ShareQRCode(serverCache.guid))
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text("Удалить", color = MaterialTheme.colorScheme.error) },
+                    onClick = {
+                        showServerMenu = false
+                        confirmDelete = true
+                    }
+                )
+            }
+            }
         }
         }
         }
     }
-}
-
-@Composable
-fun GroupPagerPage(
-    groupId: String,
-    mainViewModel: MainViewModel,
-    selectedGuid: String?,
-    doubleColumnDisplay: Boolean,
-    confirmRemove: Boolean,
-    searchQuery: String,
-    lazyListStates: MutableMap<String, LazyListState>,
-    lazyGridStates: MutableMap<String, LazyGridState>,
-    onSelectServer: (String) -> Unit,
-    onEditServer: (String, ProfileItem) -> Unit,
-    onShareServer: (String, ProfileItem) -> Unit,
-    onMoreServer: (String, ProfileItem) -> Unit,
-    onRemoveServer: (String) -> Unit,
-    contentPadding: PaddingValues
-) {
-    // Архитектурная заглушка
 }

@@ -137,6 +137,7 @@ object NotificationManager {
         speedNotificationJob?.cancel()
         speedNotificationJob = null
         mNotificationManager = null
+        TrafficSpeedState.reset()
     }
 
     /**
@@ -147,6 +148,7 @@ object NotificationManager {
             it.cancel()
             speedNotificationJob = null
             updateNotification("", 0, 0)
+            TrafficSpeedState.reset()
         }
     }
 
@@ -260,6 +262,18 @@ object NotificationManager {
         val proxyTotal = proxyUplink + proxyDownlink
         val directTotal = directUplink + directDownlink
         val zeroSpeed = proxyTotal + directTotal == 0L
+
+        // Тот же замер отдаём интерфейсу: счётчики ядра приходят с обнулением,
+        // так что опрашивать их вторым циклом ради главного экрана нельзя
+        TrafficSpeedState.publish(
+            TrafficSpeed(
+                proxyUp = (proxyUplink / sinceLastQueryInSeconds).toLong(),
+                proxyDown = (proxyDownlink / sinceLastQueryInSeconds).toLong(),
+                directUp = (directUplink / sinceLastQueryInSeconds).toLong(),
+                directDown = (directDownlink / sinceLastQueryInSeconds).toLong()
+            )
+        )
+
         if (!zeroSpeed || !lastZeroSpeed) {
             val text = StringBuilder()
             appendSpeedString(
