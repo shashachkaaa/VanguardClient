@@ -1,5 +1,6 @@
 package com.v2ray.ang.ui.main
 
+import android.content.Intent
 import androidx.compose.animation.*
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
@@ -58,6 +59,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.delay
 import com.v2ray.ang.R
+import com.v2ray.ang.dto.LogFileInfo
 import com.v2ray.ang.extension.toSpeedString
 import com.v2ray.ang.extension.toTrafficString
 import com.v2ray.ang.handler.SessionTraffic
@@ -69,6 +71,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalContext
 import com.v2ray.ang.handler.AppUpdateInstaller
 import com.v2ray.ang.handler.UpdateInstallState
+import com.v2ray.ang.ui.logcat.LogFileActivity
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.ui.compose.GlassSurface
 import com.v2ray.ang.ui.compose.QRCodeDialog
@@ -203,6 +206,7 @@ fun MainScreen(
     val pinnedGuids by mainViewModel.pinnedGuids.collectAsStateWithLifecycle()
 
     val availableUpdate by mainViewModel.availableUpdate.collectAsStateWithLifecycle()
+    val crashReport by mainViewModel.crashReport.collectAsStateWithLifecycle()
     val installState by AppUpdateInstaller.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
@@ -315,6 +319,22 @@ fun MainScreen(
                         mainViewModel.startUpdate(onFallback = { url -> uriHandler.openUri(url) })
                     },
                     onDismiss = { mainViewModel.dismissUpdate() }
+                )
+
+                CrashBanner(
+                    report = crashReport,
+                    onOpen = {
+                        val report = crashReport ?: return@CrashBanner
+                        context.startActivity(
+                            Intent(context, LogFileActivity::class.java).apply {
+                                putExtra(LogFileActivity.EXTRA_PATH, report.path)
+                                putExtra(LogFileActivity.EXTRA_NAME, report.name)
+                                putExtra(LogFileActivity.EXTRA_REMOVABLE, true)
+                            }
+                        )
+                        mainViewModel.dismissCrashReport()
+                    },
+                    onDismiss = { mainViewModel.dismissCrashReport() }
                 )
 
                 AnimatedVisibility(
@@ -700,6 +720,70 @@ private fun UpdateBanner(
                             fontWeight = FontWeight.Bold
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Плашка о прошлом падении. Отчёт уже лежит на диске, но сам себя никто не
+ * найдёт - без этой плашки о сбое так и знали бы только по «оно закрылось».
+ */
+@Composable
+private fun CrashBanner(
+    report: LogFileInfo?,
+    onOpen: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AnimatedVisibility(
+        visible = report != null,
+        enter = fadeIn(tween(300)) + expandVertically(tween(300)),
+        exit = fadeOut(tween(200)) + shrinkVertically(tween(200))
+    ) {
+        Surface(
+            shape = RoundedCornerShape(18.dp),
+            color = MaterialTheme.colorScheme.error.copy(alpha = 0.10f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.30f)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 10.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.crash_banner_title),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(R.string.crash_banner_text),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                TextButton(onClick = onDismiss) {
+                    Text(
+                        text = stringResource(R.string.crash_banner_dismiss),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+                TextButton(onClick = onOpen) {
+                    Text(
+                        text = stringResource(R.string.crash_banner_open),
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             }
         }

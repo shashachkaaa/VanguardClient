@@ -6,6 +6,7 @@ import androidx.work.Configuration
 import androidx.work.WorkManager
 import com.tencent.mmkv.MMKV
 import com.v2ray.ang.AppConfig.ANG_PACKAGE
+import com.v2ray.ang.handler.CrashReportManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.ui.compose.ThemeManager
 
@@ -32,6 +33,9 @@ class AngApplication : Application() {
      */
     override fun onCreate() {
         super.onCreate()
+
+        // Раньше всего остального: падение при инициализации тоже стоит поймать
+        CrashReportManager.install(this)
 
         MMKV.initialize(this)
 

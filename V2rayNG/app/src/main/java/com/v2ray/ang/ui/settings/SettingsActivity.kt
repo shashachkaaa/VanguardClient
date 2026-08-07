@@ -60,6 +60,7 @@ import com.v2ray.ang.core.CoreNativeManager
 import com.v2ray.ang.dto.LogFileInfo
 import com.v2ray.ang.enums.PingType
 import com.v2ray.ang.extension.toTrafficString
+import com.v2ray.ang.handler.CrashReportManager
 import com.v2ray.ang.handler.LogFileManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
@@ -1035,6 +1036,11 @@ private fun LogSettings(modifier: Modifier) {
         value = withContext(Dispatchers.IO) { LogFileManager.listLogFiles(context) }
     }
 
+    // Отчёты о сбоях пишутся сами; «удалить все» перечитывает список тем же счётчиком
+    val crashReports by produceState(emptyList<LogFileInfo>(), refreshTick) {
+        value = withContext(Dispatchers.IO) { CrashReportManager.listReports(context) }
+    }
+
     SettingsColumn(modifier, grouped = false) {
         PreferenceGroupHeader(title = stringResource(R.string.title_log_settings))
         SettingsGroupCard {
@@ -1082,6 +1088,42 @@ private fun LogSettings(modifier: Modifier) {
                         }
                     )
                 }
+            }
+        }
+
+        PreferenceGroupHeader(title = stringResource(R.string.title_crash_reports))
+        SettingsGroupCard {
+            if (crashReports.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.crash_reports_empty),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                )
+            } else {
+                crashReports.forEach { report ->
+                    SettingsFileItem(
+                        title = report.name,
+                        subtitle = formatLogTimestamp(report.lastModified),
+                        trailingText = report.sizeBytes.toTrafficString(),
+                        onClick = {
+                            context.startActivity(
+                                Intent(context, LogFileActivity::class.java).apply {
+                                    putExtra(LogFileActivity.EXTRA_PATH, report.path)
+                                    putExtra(LogFileActivity.EXTRA_NAME, report.name)
+                                    putExtra(LogFileActivity.EXTRA_REMOVABLE, true)
+                                }
+                            )
+                        }
+                    )
+                }
+                SettingsMenuItem(
+                    title = stringResource(R.string.crash_reports_clear),
+                    onClick = {
+                        CrashReportManager.clearReports(context)
+                        refreshTick++
+                    }
+                )
             }
         }
     }

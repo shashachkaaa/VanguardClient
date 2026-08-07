@@ -9,12 +9,14 @@ import com.v2ray.ang.R
 import com.v2ray.ang.dto.GroupMapItem
 import com.v2ray.ang.dto.CheckUpdateResult
 import com.v2ray.ang.dto.LocateTarget
+import com.v2ray.ang.dto.LogFileInfo
 import com.v2ray.ang.dto.entities.ServerAffiliationInfo
 import com.v2ray.ang.dto.entities.ServersCache
 import com.v2ray.ang.dto.entities.SubscriptionCache
 import com.v2ray.ang.extension.matchesPattern
 import com.v2ray.ang.ui.compose.AppSnackbarManager
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.CrashReportManager
 import com.v2ray.ang.handler.AppUpdateInstaller
 import com.v2ray.ang.handler.PingManager
 import com.v2ray.ang.handler.UpdateInstallState
@@ -82,6 +84,11 @@ class MainViewModel(
 
     /** Найденное обновление: из него на главном экране рисуется плашка. */
     val availableUpdate: StateFlow<CheckUpdateResult?> = _availableUpdate.asStateFlow()
+
+    private val _crashReport = MutableStateFlow<LogFileInfo?>(null)
+
+    /** Отчёт о сбое прошлого запуска: о нём сообщаем один раз, плашкой на главном. */
+    val crashReport: StateFlow<LogFileInfo?> = _crashReport.asStateFlow()
 
     val isImporting = MutableStateFlow(false)
     val importError = MutableStateFlow<String?>(null)
@@ -436,6 +443,7 @@ class MainViewModel(
                 delay(32L)
                 dataSource.initAssets()
                 dataSource.syncSubscriptions()
+                _crashReport.value = CrashReportManager.unseenReport(app)
                 checkForUpdateQuietly()
             } catch (cancelled: CancellationException) {
                 throw cancelled
@@ -479,6 +487,15 @@ class MainViewModel(
             MmkvManager.encodeSettings(AppConfig.PREF_UPDATE_DISMISSED_VERSION, it)
         }
         _availableUpdate.value = null
+    }
+
+    /**
+     * Плашку о сбое убираем в любом случае - и когда отчёт открыли, и когда
+     * закрыли: повторно про то же падение напоминать нечего.
+     */
+    fun dismissCrashReport() {
+        _crashReport.value?.let { CrashReportManager.markSeen(it.name) }
+        _crashReport.value = null
     }
 
     fun refreshUiSettings() {

@@ -55,6 +55,12 @@ class LogFileActivity : BaseComponentActivity() {
     companion object {
         const val EXTRA_PATH = "log_file_path"
         const val EXTRA_NAME = "log_file_name"
+
+        /**
+         * Корзина удаляет файл целиком, а не опустошает его. Для логов ядра нужно
+         * второе - оно пишет в тот же файл дальше; для отчёта о сбое - первое.
+         */
+        const val EXTRA_REMOVABLE = "log_file_removable"
     }
 
     private val viewModel: LogFileViewModel by viewModels()
@@ -78,7 +84,15 @@ class LogFileActivity : BaseComponentActivity() {
             title = fileName,
             path = filePath,
             onBackClick = { finish() },
-            onShareClick = { shareLogFile() }
+            onShareClick = { shareLogFile() },
+            onDeleteClick = {
+                if (intent.getBooleanExtra(EXTRA_REMOVABLE, false)) {
+                    File(filePath).delete()
+                    finish()
+                } else {
+                    viewModel.clear(filePath)
+                }
+            }
         )
     }
 
@@ -128,7 +142,8 @@ fun LogFileScreen(
     title: String,
     path: String,
     onBackClick: () -> Unit,
-    onShareClick: () -> Unit
+    onShareClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val lines by viewModel.lines.collectAsStateWithLifecycle()
     val isLoading by viewModel.isLoading.collectAsStateWithLifecycle()
@@ -204,7 +219,7 @@ fun LogFileScreen(
                             contentDescription = stringResource(R.string.logcat_share)
                         )
                     }
-                    IconButton(onClick = { viewModel.clear(path) }) {
+                    IconButton(onClick = onDeleteClick) {
                         Icon(
                             painterResource(R.drawable.ic_delete_24dp),
                             contentDescription = stringResource(R.string.logcat_clear)

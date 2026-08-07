@@ -105,6 +105,9 @@ object AppConfig {
 
     /** Версия, для которой плашку на главном закрыли рукой. */
     const val PREF_UPDATE_DISMISSED_VERSION = "pref_update_dismissed_version"
+
+    /** Отчёт о сбое, о котором уже сообщили: плашка про него больше не всплывает. */
+    const val PREF_CRASH_SEEN_REPORT = "pref_crash_seen_report"
     const val PREF_GEO_FILES_SOURCES = "pref_geo_files_sources"
     const val PREF_USE_HEV_TUNNEL = "pref_use_hev_tunnel_v2"
     const val PREF_HEV_TUNNEL_LOGLEVEL = "pref_hev_tunnel_loglevel"
