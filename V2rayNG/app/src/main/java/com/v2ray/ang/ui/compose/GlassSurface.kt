@@ -1,7 +1,6 @@
 package com.v2ray.ang.ui.compose
 
 import android.os.Build
-import android.view.View
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -28,10 +27,8 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rememberGraphicsLayer
-import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -60,7 +57,15 @@ val LocalGlassBackdrop = compositionLocalOf<GlassBackdrop?> { null }
  * меню, шторка), поэтому координаты нужны общие - экранные, а не оконные.
  */
 @Stable
-class GlassBackdrop internal constructor(val layer: GraphicsLayer) {
+class GlassBackdrop internal constructor(
+    val layer: GraphicsLayer,
+    /**
+     * Тот же снимок, но уже размытый. Размываем один раз на кадр для всего экрана,
+     * а не в каждом стекле по кусочку: кусочек приходилось растягивать по краям,
+     * и на границах оставались смазанные хвосты.
+     */
+    val blurred: GraphicsLayer
+) {
     /** Левый верхний угол записанного содержимого в координатах экрана. */
     var origin by mutableStateOf(Offset.Zero)
         internal set
@@ -69,7 +74,8 @@ class GlassBackdrop internal constructor(val layer: GraphicsLayer) {
 @Composable
 fun rememberGlassBackdrop(): GlassBackdrop {
     val layer = rememberGraphicsLayer()
-    return remember(layer) { GlassBackdrop(layer) }
+    val blurred = rememberGraphicsLayer()
+    return remember(layer, blurred) { GlassBackdrop(layer, blurred) }
 }
 
 /**
@@ -77,12 +83,24 @@ fun rememberGlassBackdrop(): GlassBackdrop {
  * чтобы стеклянные поверхности могли размыть именно то, что под ними.
  */
 @Composable
-fun Modifier.glassBackdropSource(backdrop: GlassBackdrop): Modifier {
-    val view = LocalView.current
+fun Modifier.glassBackdropSource(
+    backdrop: GlassBackdrop,
+    blurRadius: Dp = GlassBlurRadius
+): Modifier {
+    val canBlur = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
     return this
-        .onGloballyPositioned { backdrop.origin = it.screenPosition(view) }
+        .onGloballyPositioned { backdrop.origin = it.positionOnScreen() }
         .drawWithContent {
             backdrop.layer.record { this@drawWithContent.drawContent() }
+
+            if (canBlur) {
+                val radius = blurRadius.toPx()
+                runCatching {
+                    backdrop.blurred.renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
+                    backdrop.blurred.record { drawLayer(backdrop.layer) }
+                }
+            }
+
             drawLayer(backdrop.layer)
         }
 }
@@ -111,12 +129,11 @@ fun Modifier.glassBackground(
 ): Modifier {
     val scheme = MaterialTheme.colorScheme
     val isDark = LocalDarkTheme.current
-    val view = LocalView.current
 
     val canBlur = backdrop != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-    val blurLayer = rememberGraphicsLayer()
 
-    // Экранные координаты нужны, чтобы вырезать из слоя ровно тот кусок фона, который под нами
+    // Экранные координаты нужны, чтобы вырезать из слоя ровно тот кусок фона, который под нами.
+    // Именно экранные: стекло часто живёт в своём окне, и оконные координаты у него свои
     var position by remember { mutableStateOf(Offset.Zero) }
 
     // Без размытия стекло должно быть плотнее, иначе сквозь него читается текст
@@ -126,24 +143,20 @@ fun Modifier.glassBackground(
 
     return this
         .clip(shape)
-        .onGloballyPositioned { position = it.screenPosition(view) }
+        .onGloballyPositioned { position = it.positionOnScreen() }
         .drawBehind {
             val source = backdrop
             var blurred = false
             if (canBlur && source != null) {
-                val dx = source.origin.x - position.x
-                val dy = source.origin.y - position.y
-                val radius = blurRadius.toPx()
-                // Размытие живёт на отдельном слое, иначе оно размазало бы и само содержимое.
-                // Clamp по краям: иначе кайма набирала бы прозрачность и темнела
+                // Сдвигаем готовый размытый снимок так, чтобы под нами оказался
+                // ровно тот участок экрана, над которым мы висим
                 runCatching {
-                    blurLayer.renderEffect = BlurEffect(radius, radius, TileMode.Clamp)
-                    blurLayer.record {
-                        translate(left = dx, top = dy) {
-                            drawLayer(source.layer)
-                        }
+                    translate(
+                        left = source.origin.x - position.x,
+                        top = source.origin.y - position.y
+                    ) {
+                        drawLayer(source.blurred)
                     }
-                    drawLayer(blurLayer)
                 }.onSuccess { blurred = true }
             }
             if (!blurred) drawRect(solid)
@@ -202,12 +215,15 @@ fun GlassSurface(
 
 /** Тонировка стекла: сверху светлее, снизу уходит в цвет поверхности. */
 fun glassTint(isDark: Boolean, surface: Color, opaqueness: Float = 1f): Brush {
-    val top = if (isDark) 0.06f else 0.22f
-    val bottom = if (isDark) 0.20f else 0.10f
+    // На тёмной теме плёнка светлая: фон здесь чёрный, и размытая чернота остаётся
+    // чернотой - стекло читается только за счёт того, что оно светлее подложки
+    val top = if (isDark) 0.10f else 0.22f
+    val bottom = if (isDark) 0.03f else 0.10f
+    val bottomColor = if (isDark) Color.White else surface
     return Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = (top * opaqueness).coerceIn(0f, 1f)),
-            surface.copy(alpha = (bottom * opaqueness).coerceIn(0f, 1f))
+            bottomColor.copy(alpha = (bottom * opaqueness).coerceIn(0f, 1f))
         )
     )
 }
@@ -224,12 +240,4 @@ fun glassEdge(isDark: Boolean): Brush = Brush.verticalGradient(
  * Положение элемента на экране. Внутри окна Compose знает только оконные координаты,
  * а стекло и его фон могут оказаться в разных окнах, поэтому приводим к экранным.
  */
-private fun LayoutCoordinates.screenPosition(view: View): Offset {
-    val inWindow = positionInWindow()
-    val onScreen = IntArray(2).also { view.getLocationOnScreen(it) }
-    val viewInWindow = IntArray(2).also { view.getLocationInWindow(it) }
-    return Offset(
-        inWindow.x + (onScreen[0] - viewInWindow[0]).toFloat(),
-        inWindow.y + (onScreen[1] - viewInWindow[1]).toFloat()
-    )
-}
+
