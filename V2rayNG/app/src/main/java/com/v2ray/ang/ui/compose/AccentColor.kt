@@ -1,5 +1,7 @@
 package com.v2ray.ang.ui.compose
 
+import android.graphics.Canvas
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -27,12 +29,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.createBitmap
 import com.v2ray.ang.R
 import com.v2ray.ang.handler.AppIconManager
 import com.v2ray.ang.handler.AppIconOption
@@ -291,21 +297,52 @@ private fun AppIconPreview(
     selected: Boolean,
     onClick: () -> Unit
 ) {
-    Image(
-        painter = painterResource(option.previewRes),
-        contentDescription = stringResource(option.titleRes),
-        modifier = Modifier
-            .size(46.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                width = if (selected) 3.dp else 1.dp,
-                color = if (selected) {
-                    MaterialTheme.colorScheme.onSurface
-                } else {
-                    MaterialTheme.colorScheme.outlineVariant
-                },
-                shape = RoundedCornerShape(12.dp)
-            )
-            .clickable { onClick() }
-    )
+    val preview = rememberIconBitmap(option.previewRes)
+
+    val shape = RoundedCornerShape(12.dp)
+    val border = Modifier
+        .size(46.dp)
+        .clip(shape)
+        .border(
+            width = if (selected) 3.dp else 1.dp,
+            color = if (selected) {
+                MaterialTheme.colorScheme.onSurface
+            } else {
+                MaterialTheme.colorScheme.outlineVariant
+            },
+            shape = shape
+        )
+        .clickable { onClick() }
+
+    if (preview != null) {
+        Image(
+            bitmap = preview,
+            contentDescription = stringResource(option.titleRes),
+            modifier = border
+        )
+    } else {
+        Box(modifier = border.background(MaterialTheme.colorScheme.surfaceContainerHighest))
+    }
+}
+
+/**
+ * Значок приложения в виде картинки.
+ *
+ * Через painterResource его не загрузить: с Android 8 значок описан как
+ * adaptive-icon, а это ни вектор, ни растр - попытка открыть его роняла экран.
+ * Поэтому рисуем системный drawable в картинку сами, как это делает лаунчер.
+ */
+@Composable
+private fun rememberIconBitmap(@DrawableRes resId: Int): ImageBitmap? {
+    val context = LocalContext.current
+    return remember(resId) {
+        runCatching {
+            val drawable = ContextCompat.getDrawable(context, resId) ?: return@runCatching null
+            val size = 144
+            val bitmap = createBitmap(size, size)
+            drawable.setBounds(0, 0, size, size)
+            drawable.draw(Canvas(bitmap))
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
 }
