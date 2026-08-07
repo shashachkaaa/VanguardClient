@@ -100,6 +100,9 @@ object AppConfig {
     /** Версия, о которой уже показывали уведомление: повторно не напоминаем. */
     const val PREF_UPDATE_NOTIFIED_VERSION = "pref_update_notified_version"
 
+    /** Найденное обновление: «версия|ссылка». Позволяет показать плашку без сети. */
+    const val PREF_UPDATE_PENDING = "pref_update_pending"
+
     /** Версия, для которой плашку на главном закрыли рукой. */
     const val PREF_UPDATE_DISMISSED_VERSION = "pref_update_dismissed_version"
     const val PREF_GEO_FILES_SOURCES = "pref_geo_files_sources"

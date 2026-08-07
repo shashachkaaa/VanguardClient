@@ -92,9 +92,12 @@ object UpdateCheckerManager {
             return null
         }
 
+        // По времени ходить рано - но если в прошлый раз обновление нашлось,
+        // отдаём его из памяти. Иначе уведомление о версии приходило, а плашка
+        // в приложении появлялась только через несколько часов
         val lastCheck = MmkvManager.decodeSettingsLong(AppConfig.PREF_UPDATE_LAST_CHECK, 0L)
         if (!force && System.currentTimeMillis() - lastCheck < CHECK_INTERVAL_MS) {
-            return null
+            return pendingUpdate()
         }
 
         return try {
@@ -102,11 +105,39 @@ object UpdateCheckerManager {
                 MmkvManager.decodeSettingsBool(AppConfig.PREF_CHECK_UPDATE_PRE_RELEASE, false)
             val result = checkForUpdate(preRelease)
             MmkvManager.encodeSettings(AppConfig.PREF_UPDATE_LAST_CHECK, System.currentTimeMillis())
+            rememberPending(result)
             result.takeIf { it.hasUpdate }
         } catch (e: Exception) {
             LogUtil.i(AppConfig.TAG, "Background update check failed: ${e.message}")
-            null
+            // Сеть могла не ответить, а найденное раньше обновление никуда не делось
+            pendingUpdate()
         }
+    }
+
+    /** Запоминает найденную версию, чтобы показать её без похода в сеть. */
+    private fun rememberPending(result: CheckUpdateResult) {
+        val value = if (result.hasUpdate) {
+            "${result.latestVersion.orEmpty()}|${result.downloadUrl.orEmpty()}"
+        } else {
+            ""
+        }
+        MmkvManager.encodeSettings(AppConfig.PREF_UPDATE_PENDING, value)
+    }
+
+    /**
+     * Обновление, найденное прошлой проверкой. Версию сверяем с установленной:
+     * после обновления запись остаётся, а показывать её уже нечего.
+     */
+    private fun pendingUpdate(): CheckUpdateResult? {
+        val stored = MmkvManager.decodeSettingsString(AppConfig.PREF_UPDATE_PENDING).orEmpty()
+        val version = stored.substringBefore('|').takeIf { it.isNotBlank() } ?: return null
+        if (compareVersions(version, BuildConfig.VERSION_NAME) <= 0) return null
+
+        return CheckUpdateResult(
+            hasUpdate = true,
+            latestVersion = version,
+            downloadUrl = stored.substringAfter('|').takeIf { it.isNotBlank() }
+        )
     }
 
     private fun compareVersions(version1: String, version2: String): Int {
