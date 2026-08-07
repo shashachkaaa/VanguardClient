@@ -98,6 +98,13 @@ class MainActivity : HelperBaseComponentActivity() {
             }
         }
 
+    /**
+     * Экран пишет фон для стекла сам: панель снизу лежит поверх содержимого и должна
+     * размывать именно его. Вторая запись из темы поверх этой давала бы слой,
+     * который ссылается на слой - всплывающие окна такой не рисуют и остаются глухими.
+     */
+    override val recordGlassBackdrop: Boolean = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel.onAction(MainAction.Initialize)

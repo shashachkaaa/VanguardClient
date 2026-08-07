@@ -499,6 +499,10 @@
     <string name="connection_test_testing_count">Testing %d configs…</string>
     <string name="connection_test_available">Success: Connection took %dms</string>
     <string name="connection_test_error">Fail to detect internet connection: %s</string>
+    <string name="connection_test_timeout">the server did not answer in time</string>
+    <string name="connection_test_refused">the connection was refused</string>
+    <string name="connection_test_dns">the address could not be resolved</string>
+    <string name="connection_test_unknown">reason unknown</string>
     <string name="connection_test_fail">Internet Unavailable</string>
     <string name="connection_test_error_status_code">Error code: #%d</string>
     <string name="connection_connected">Connected, tap to check connection</string>

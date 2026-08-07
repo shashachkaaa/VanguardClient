@@ -238,9 +238,12 @@ fun MainScreen(
     }
     val allCollapsed = collapsibleGuids.isNotEmpty() && collapsedGuids.size >= collapsibleGuids.size
 
-    // Стекло размывает именно то, что под ним, поэтому экран пишется в слой
+    // Стекло размывает именно то, что под ним, поэтому экран пишется в слой.
+    // Его же получают меню и диалоги: они живут в своих окнах и потому вправе
+    // рисовать этот слой, не попадая внутрь его записи
     val backdrop = rememberGlassBackdrop()
 
+    CompositionLocalProvider(LocalGlassBackdrop provides backdrop) {
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             // ДИНАМИЧЕСКИЙ ФОН: Подстраивается под тему (белый, серый или черный AMOLED)
@@ -551,6 +554,7 @@ fun MainScreen(
                 )
             }
         }
+    }
     }
 }
 

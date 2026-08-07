@@ -36,7 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 /** Радиус размытия фона под стеклом по умолчанию. */
-val GlassBlurRadius = 26.dp
+val GlassBlurRadius = 30.dp
 
 /** Форма выпадающих меню. */
 val GlassMenuShape = RoundedCornerShape(20.dp)
@@ -160,10 +160,12 @@ fun Modifier.glassBackground(
 fun Modifier.glassPanel(
     shape: Shape,
     blurRadius: Dp = GlassBlurRadius,
-    opaqueness: Float = 1.15f,
+    opaqueness: Float = 0.7f,
     fallbackColor: Color? = null
 ): Modifier {
-    val dense = fallbackColor ?: MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.97f)
+    // Плотность подложки нужна только там, где размытия нет: сквозь прозрачное
+    // стекло без него читался бы текст под окном
+    val dense = fallbackColor ?: MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.94f)
     return glassBackground(
         shape = shape,
         backdrop = LocalGlassBackdrop.current,
@@ -200,8 +202,8 @@ fun GlassSurface(
 
 /** Тонировка стекла: сверху светлее, снизу уходит в цвет поверхности. */
 fun glassTint(isDark: Boolean, surface: Color, opaqueness: Float = 1f): Brush {
-    val top = if (isDark) 0.07f else 0.28f
-    val bottom = if (isDark) 0.26f else 0.12f
+    val top = if (isDark) 0.06f else 0.22f
+    val bottom = if (isDark) 0.20f else 0.10f
     return Brush.verticalGradient(
         listOf(
             Color.White.copy(alpha = (top * opaqueness).coerceIn(0f, 1f)),

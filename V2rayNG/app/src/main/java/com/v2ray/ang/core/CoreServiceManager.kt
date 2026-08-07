@@ -352,7 +352,7 @@ object CoreServiceManager {
             val result = if (time >= 0) {
                 service.getString(R.string.connection_test_available, time)
             } else {
-                service.getString(R.string.connection_test_error, errorStr)
+                service.getString(R.string.connection_test_error, humanizeDelayError(service, errorStr))
             }
             MessageHelper.sendMsg2UI(service, AppConfig.MSG_MEASURE_DELAY_SUCCESS, result)
 
@@ -363,6 +363,25 @@ object CoreServiceManager {
                 }
             }
         }
+    }
+
+    /**
+     * Ошибки ядра приходят строками от Go и человеку ничего не говорят.
+     * Самые частые переводим, остальные оставляем как есть - для отчёта о баге.
+     */
+    private fun humanizeDelayError(service: Service, raw: String): String = when {
+        raw.contains("deadline exceeded", true) ||
+                raw.contains("timeout", true) -> service.getString(R.string.connection_test_timeout)
+
+        raw.contains("connection refused", true) ||
+                raw.contains("connect: ", true) -> service.getString(R.string.connection_test_refused)
+
+        raw.contains("no such host", true) ||
+                raw.contains("dns", true) -> service.getString(R.string.connection_test_dns)
+
+        raw.isBlank() || raw == "empty message" -> service.getString(R.string.connection_test_unknown)
+
+        else -> raw.trim()
     }
 
     /**
