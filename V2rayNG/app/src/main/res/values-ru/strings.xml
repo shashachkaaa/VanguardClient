@@ -263,6 +263,13 @@
     <string name="title_settings_section_general">Основное</string>
     <string name="title_settings_section_connection">Соединение</string>
     <string name="title_settings_section_bypass">Обход блокировок</string>
+    <string name="title_settings_section_tools">Инструменты</string>
+    <string name="summary_settings_per_app_proxy">Выбрать, какие приложения идут через туннель</string>
+    <string name="summary_settings_routing">Правила: что в прокси, что напрямую, что никуда</string>
+    <string name="summary_settings_assets">Geo-файлы со списками доменов и адресов</string>
+    <string name="summary_settings_subscriptions">Список подписок и их настройки</string>
+    <string name="summary_settings_backup">Сохранить настройки в файл или восстановить</string>
+    <string name="summary_settings_update">Проверить наличие новой версии прямо сейчас</string>
     <string name="title_settings_section_other">Прочее</string>
     <string name="summary_settings_ui">Тема, язык, отображение списка</string>
     <string name="summary_settings_mode">VPN или прокси, root-режим</string>

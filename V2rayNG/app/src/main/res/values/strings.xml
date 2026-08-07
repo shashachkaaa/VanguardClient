@@ -264,6 +264,13 @@
     <string name="title_settings_section_general">General</string>
     <string name="title_settings_section_connection">Connection</string>
     <string name="title_settings_section_bypass">Bypass</string>
+    <string name="title_settings_section_tools">Tools</string>
+    <string name="summary_settings_per_app_proxy">Choose which apps go through the tunnel</string>
+    <string name="summary_settings_routing">Rules for what goes to the proxy, direct or nowhere</string>
+    <string name="summary_settings_assets">Geo files with lists of domains and addresses</string>
+    <string name="summary_settings_subscriptions">List of subscriptions and their settings</string>
+    <string name="summary_settings_backup">Save the settings to a file or restore them</string>
+    <string name="summary_settings_update">Look for a new version right now</string>
     <string name="title_settings_section_other">Other</string>
     <string name="summary_settings_ui">Theme, language, server list display</string>
     <string name="summary_settings_mode">VPN or proxy, root mode</string>

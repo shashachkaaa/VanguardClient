@@ -64,7 +64,13 @@ import com.v2ray.ang.handler.LogFileManager
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvBool
 import com.v2ray.ang.handler.MmkvManager.rememberMmkvString
 import com.v2ray.ang.root.RootManager
+import com.v2ray.ang.ui.backup.BackupActivity
 import com.v2ray.ang.ui.base.BaseComponentActivity
+import com.v2ray.ang.ui.checkupdate.CheckUpdateActivity
+import com.v2ray.ang.ui.perappproxy.PerAppProxyActivity
+import com.v2ray.ang.ui.routing.RoutingSettingActivity
+import com.v2ray.ang.ui.subscription.SubSettingActivity
+import com.v2ray.ang.ui.userasset.UserAssetActivity
 import com.v2ray.ang.ui.compose.AccentColorSetting
 import com.v2ray.ang.ui.compose.AppIconSetting
 import com.v2ray.ang.ui.compose.AppSnackbarManager
@@ -317,6 +323,8 @@ private fun SettingsCategoryList(
     scrollState: ScrollState,
     onCategoryClick: (SettingsCategory) -> Unit
 ) {
+    val context = LocalContext.current
+
     SettingsColumn(modifier, scrollState, grouped = false) {
         settingsSections.forEach { section ->
             PreferenceGroupHeader(title = stringResource(section.titleRes))
@@ -329,6 +337,42 @@ private fun SettingsCategoryList(
                     )
                 }
             }
+        }
+
+        // Экраны, живущие отдельными активностями. Раньше на них вела шторка,
+        // которой больше нет, и попасть туда было нельзя вовсе
+        PreferenceGroupHeader(title = stringResource(R.string.title_settings_section_tools))
+        SettingsGroupCard {
+            SettingsCategoryItem(
+                title = stringResource(R.string.per_app_proxy_settings),
+                summary = stringResource(R.string.summary_settings_per_app_proxy),
+                onClick = { context.startActivity(Intent(context, PerAppProxyActivity::class.java)) }
+            )
+            SettingsCategoryItem(
+                title = stringResource(R.string.routing_settings_title),
+                summary = stringResource(R.string.summary_settings_routing),
+                onClick = { context.startActivity(Intent(context, RoutingSettingActivity::class.java)) }
+            )
+            SettingsCategoryItem(
+                title = stringResource(R.string.title_user_asset_setting),
+                summary = stringResource(R.string.summary_settings_assets),
+                onClick = { context.startActivity(Intent(context, UserAssetActivity::class.java)) }
+            )
+            SettingsCategoryItem(
+                title = stringResource(R.string.title_sub_setting),
+                summary = stringResource(R.string.summary_settings_subscriptions),
+                onClick = { context.startActivity(Intent(context, SubSettingActivity::class.java)) }
+            )
+            SettingsCategoryItem(
+                title = stringResource(R.string.title_configuration_backup_restore),
+                summary = stringResource(R.string.summary_settings_backup),
+                onClick = { context.startActivity(Intent(context, BackupActivity::class.java)) }
+            )
+            SettingsCategoryItem(
+                title = stringResource(R.string.update_check_for_update),
+                summary = stringResource(R.string.summary_settings_update),
+                onClick = { context.startActivity(Intent(context, CheckUpdateActivity::class.java)) }
+            )
         }
     }
 }
