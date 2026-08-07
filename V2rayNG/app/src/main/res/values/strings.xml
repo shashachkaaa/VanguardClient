@@ -222,6 +222,10 @@
     <string name="sub_alert_expired">The subscription has expired</string>
     <string name="title_pref_dynamic_color">Wallpaper colours</string>
     <string name="summary_pref_dynamic_color">Take the accent from the system wallpaper. The dark theme keeps its black background</string>
+    <string name="title_pref_app_icon">App icon</string>
+    <string name="app_icon_default">Graphite</string>
+    <string name="app_icon_light">Light</string>
+    <string name="app_icon_hint">The launcher may need a moment to redraw the icon. Pinned shortcuts have to be created again.</string>
     <string name="title_pref_accent_color">Accent colour</string>
     <string name="summary_pref_accent_color_dynamic">Set by the wallpaper colours</string>
     <string name="accent_indigo">Indigo</string>

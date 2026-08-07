@@ -1,6 +1,7 @@
 package com.v2ray.ang.ui.compose
 
 import androidx.annotation.StringRes
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -26,11 +28,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.ColorUtils
 import com.v2ray.ang.R
+import com.v2ray.ang.handler.AppIconManager
+import com.v2ray.ang.handler.AppIconOption
 
 /**
  * Вариант акцента: [id] хранится в настройках, [seed] - исходный цвет,
@@ -225,4 +230,82 @@ private fun AccentSwatch(
             )
         }
     }
+}
+
+/**
+ * Строка настроек со сменой значка приложения.
+ *
+ * Значок меняется включением одного из псевдонимов из манифеста, поэтому лаунчеру
+ * нужно время, чтобы его перерисовать - об этом честно предупреждаем.
+ */
+@Composable
+fun AppIconSetting() {
+    val context = LocalContext.current
+    var selected by remember { mutableStateOf(AppIconManager.current()) }
+    var showDialog by remember { mutableStateOf(false) }
+
+    SettingsMenuItem(
+        title = stringResource(R.string.title_pref_app_icon),
+        subtitle = stringResource(selected.titleRes),
+        onClick = { showDialog = true }
+    )
+
+    if (showDialog) {
+        GlassAlertDialog(
+            onDismissRequest = { showDialog = false },
+            title = { Text(stringResource(R.string.title_pref_app_icon)) },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        AppIconManager.options.forEach { option ->
+                            AppIconPreview(
+                                option = option,
+                                selected = option.id == selected.id,
+                                onClick = {
+                                    AppIconManager.apply(context, option)
+                                    selected = AppIconManager.current()
+                                    showDialog = false
+                                }
+                            )
+                        }
+                    }
+                    Text(
+                        text = stringResource(R.string.app_icon_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text(stringResource(android.R.string.cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun AppIconPreview(
+    option: AppIconOption,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Image(
+        painter = painterResource(option.previewRes),
+        contentDescription = stringResource(option.titleRes),
+        modifier = Modifier
+            .size(46.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (selected) 3.dp else 1.dp,
+                color = if (selected) {
+                    MaterialTheme.colorScheme.onSurface
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable { onClick() }
+    )
 }

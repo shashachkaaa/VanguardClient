@@ -221,6 +221,10 @@
     <string name="sub_alert_expired">Срок подписки истёк</string>
     <string name="title_pref_dynamic_color">Цвета из обоев</string>
     <string name="summary_pref_dynamic_color">Брать акцент из обоев системы. Тёмная тема остаётся с чёрным фоном</string>
+    <string name="title_pref_app_icon">Значок приложения</string>
+    <string name="app_icon_default">Графит</string>
+    <string name="app_icon_light">Светлый</string>
+    <string name="app_icon_hint">Лаунчеру нужно время, чтобы перерисовать значок. Ярлыки, закреплённые на рабочем столе, придётся создать заново.</string>
     <string name="title_pref_accent_color">Акцентный цвет</string>
     <string name="summary_pref_accent_color_dynamic">Задаётся цветами из обоев</string>
     <string name="accent_indigo">Индиго</string>

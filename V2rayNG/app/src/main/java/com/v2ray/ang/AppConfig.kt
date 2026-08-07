@@ -64,6 +64,9 @@ object AppConfig {
     const val PREF_UI_MODE_NIGHT = "pref_ui_mode_night"
     const val PREF_DYNAMIC_COLOR = "pref_dynamic_color"
     const val PREF_ACCENT_COLOR = "pref_accent_color"
+
+    /** Выбранный значок приложения из [com.v2ray.ang.handler.AppIconManager]. */
+    const val PREF_APP_ICON = "pref_app_icon"
     const val PREF_IPV6_ENABLED = "pref_ipv6_enabled"
     const val PREF_PREFER_IPV6 = "pref_prefer_ipv6"
     const val PREF_PROXY_SHARING = "pref_proxy_sharing_enabled"
