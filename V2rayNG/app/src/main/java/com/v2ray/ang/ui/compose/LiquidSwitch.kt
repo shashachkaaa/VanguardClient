@@ -136,8 +136,8 @@ fun LiquidSwitch(
             radius = thumbRadius,
             thickness = thumbHeight * 0.5f,
             refraction = thumbHeight * 0.3f,
-            dispersion = 0.3f,
-            highlight = 0.2f
+            dispersion = 0.22f,
+            highlight = 0.08f
         )
 
         if (effect != null) {
@@ -153,8 +153,10 @@ fun LiquidSwitch(
         val corner = CornerRadius(thumbRadius, thumbRadius)
         val bottom = cy + thumbHeight / 2f
 
-        // Раздутая капля прозрачная: сквозь неё и видно, как перекрашивается трек
-        val body = lerp(1f, 0.32f, swell) * disabledAlpha
+        // Раздутая капля почти чистое стекло: сквозь неё и видно, как
+        // перекрашивается трек. Белила тут глушили цвет, и вместо тёмного трека
+        // под стеклом получалось светло-серое пятно
+        val body = lerp(1f, 0.12f, swell) * disabledAlpha
 
         // Тень нужна только плотной капле - у раздутой ей неоткуда взяться
         val shadow = (1f - swell) * disabledAlpha
@@ -185,23 +187,23 @@ fun LiquidSwitch(
         // Кайма живёт только на раздутой капле - там, где её край лежит поперёк
         // границ трека и в референсе действительно расходится в цвет
         if (swell > 0.01f) {
+            // По записи кайма идёт сверху тёплой, снизу холодной, а по бокам её
+            // нет. Радуга кольцом была отсебятиной, да ещё и с белым посередине -
+            // от него по краям вылезали белые засветки
             drawRoundRect(
-                brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFFFFD27A),
-                        Color(0xFFFFFFFF),
-                        Color(0xFF7ADFFF),
-                        Color(0xFFB98BFF),
-                        Color(0xFFFFD27A)
-                    ),
-                    start = topLeft,
-                    end = Offset(topLeft.x + thumbWidth, bottom)
+                brush = Brush.verticalGradient(
+                    0f to Color(0xFFFFD08A),
+                    0.4f to Color.Transparent,
+                    0.6f to Color.Transparent,
+                    1f to Color(0xFF86B8FF),
+                    startY = topLeft.y,
+                    endY = bottom
                 ),
                 topLeft = topLeft,
                 size = thumbSize,
                 cornerRadius = corner,
-                style = Stroke(width = 1.4.dp.toPx()),
-                alpha = 0.9f * swell * disabledAlpha
+                style = Stroke(width = 1.2.dp.toPx()),
+                alpha = 0.75f * swell * disabledAlpha
             )
         }
 
@@ -216,7 +218,7 @@ fun LiquidSwitch(
             size = thumbSize,
             cornerRadius = corner,
             style = Stroke(width = 1.dp.toPx()),
-            alpha = 0.85f * disabledAlpha
+            alpha = 0.35f * disabledAlpha
         )
     }
 }
