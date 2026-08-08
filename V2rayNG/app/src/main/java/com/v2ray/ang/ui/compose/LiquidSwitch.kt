@@ -1,10 +1,8 @@
 package com.v2ray.ang.ui.compose
 
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.size
@@ -12,10 +10,7 @@ import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -29,10 +24,14 @@ import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import kotlin.math.abs
 
 /** Размеры переключателя. Материаловский - 52x32, наш чуть компактнее. */
-private val SwitchWidth = 48.dp
+private val SwitchWidth = 50.dp
 private val SwitchHeight = 28.dp
+
+/** Капля в покое не круглая, а слегка вытянутая - так она и выглядит в референсе. */
+private const val ThumbAspect = 1.18f
 
 /**
  * Переключатель со стеклянной каплей вместо ползунка.
@@ -65,8 +64,6 @@ fun LiquidSwitch(
     val lensLayer = rememberGraphicsLayer()
 
     val progress = remember { Animatable(if (checked) 1f else 0f) }
-    val stretch = remember { Animatable(1f) }
-    var settled by remember { mutableStateOf(false) }
 
     LaunchedEffect(checked) {
         progress.animateTo(
@@ -75,20 +72,6 @@ fun LiquidSwitch(
                 dampingRatio = 0.62f,
                 stiffness = Spring.StiffnessMediumLow
             )
-        )
-    }
-
-    // Капля вытягивается по ходу движения и собирается обратно уже на месте.
-    // Первый проход пропускаем: при появлении экрана дёргаться нечему
-    LaunchedEffect(checked) {
-        if (!settled) {
-            settled = true
-            return@LaunchedEffect
-        }
-        stretch.animateTo(1.34f, tween(durationMillis = 130, easing = FastOutSlowInEasing))
-        stretch.animateTo(
-            targetValue = 1f,
-            animationSpec = spring(dampingRatio = 0.42f, stiffness = Spring.StiffnessMedium)
         )
     }
 
@@ -115,13 +98,20 @@ fun LiquidSwitch(
         val inset = h * 0.11f
         val thumbHeight = h - inset * 2f
         val thumbRadius = thumbHeight / 2f
-        val thumbWidth = thumbHeight * stretch.value
+
+        // Капля тянется тем сильнее, чем быстрее едет, и сама собирается уже на
+        // месте: отдельной анимации растяжения не нужно - скорость о движении
+        // знает всё. Шире трека она не станет
+        val speed = abs(progress.velocity)
+        val room = w - inset * 2f
+        val thumbWidth = (thumbHeight * (ThumbAspect + (speed * 0.16f).coerceAtMost(1f)))
+            .coerceAtMost(room)
 
         // Ход считаем уже по растянутой капле, иначе на пике растяжения она
         // вылезала бы за трек
         val from = inset + thumbWidth / 2f
         val to = w - inset - thumbWidth / 2f
-        val cx = lerp(from, to, progress.value)
+        val cx = lerp(from, to.coerceAtLeast(from), progress.value)
         val cy = h / 2f
 
         val track = lerp(trackOff, checkedTrackColor, progress.value)
@@ -139,10 +129,10 @@ fun LiquidSwitch(
             center = Offset(cx, cy),
             halfExtent = Size(thumbWidth / 2f, thumbHeight / 2f),
             radius = thumbRadius,
-            thickness = thumbHeight * 0.45f,
-            refraction = thumbHeight * 0.24f,
-            dispersion = 0.16f,
-            highlight = 0.20f
+            thickness = thumbHeight * 0.5f,
+            refraction = thumbHeight * 0.34f,
+            dispersion = 0.3f,
+            highlight = 0.26f
         )
 
         if (effect != null) {
