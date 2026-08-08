@@ -20,8 +20,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScaffoldDefaults
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,6 +35,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.v2ray.ang.ui.compose.LiquidSwitch
 import com.v2ray.ang.ui.compose.GlassAlertDialog
 import com.v2ray.ang.AppConfig
 import com.v2ray.ang.R
@@ -219,18 +218,15 @@ fun SubSettingScreen(
                                     }
                                 }
                                 Spacer(modifier = Modifier.height(4.dp))
-                                Switch(
+                                LiquidSwitch(
                                     checked = subCache.subscription.enabled,
                                     onCheckedChange = { checked ->
                                         val updated = subCache.subscription.copy()
                                         updated.enabled = checked
                                         viewModel.update(subCache.guid, updated)
                                     },
-                                    modifier = Modifier.scale(0.7f),
-                                    colors = SwitchDefaults.colors(
-                                        checkedThumbColor = MaterialTheme.colorScheme.onSecondary,
-                                        checkedTrackColor = colorFabActive
-                                    )
+                                    modifier = Modifier.scale(0.76f),
+                                    checkedTrackColor = colorFabActive
                                 )
                             }
                         }
