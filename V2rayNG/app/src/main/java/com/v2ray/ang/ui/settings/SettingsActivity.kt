@@ -289,7 +289,8 @@ fun SettingsScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(bottom = 18.dp)
+                // Капсула теперь с прозрачным запасом под раздувание капли
+                .padding(bottom = 8.dp)
         )
     }
 }

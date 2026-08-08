@@ -519,7 +519,9 @@ fun MainScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(bottom = 18.dp)
+                    // Капсула теперь с прозрачным запасом по краям под раздувание
+                    // капли, поэтому отступ снизу на этот запас и уменьшен
+                    .padding(bottom = 8.dp)
             )
         }
 

@@ -71,6 +71,15 @@ private val BarHeight = 72.dp
 private val BarPadding = 14.dp
 
 /**
+ * Запас вокруг капсулы. Под пальцем капля вырастает за её край, а стекло само себя
+ * обрезает по форме - значит капля должна жить не внутри него, а поверх, в этом поле.
+ */
+private val BarOverflow = 10.dp
+
+/** Насколько капля вырастает под пальцем. */
+private const val PressScale = 1.18f
+
+/**
  * Нижняя капсула в духе жидкого стекла: под ней размывается то, что нарисовано на экране,
  * сверху ложится полупрозрачный слой темы, блик и тонкая светлая грань.
  *
@@ -100,7 +109,7 @@ fun LiquidGlassBar(
     val selectedIndex = items.indexOf(selected).coerceAtLeast(0)
 
     val itemPx = with(density) { ItemSize.toPx() }
-    val padPx = with(density) { BarPadding.toPx() }
+    val padPx = with(density) { BarPadding.toPx() } + with(density) { BarOverflow.toPx() }
     val centerOf = { index: Int -> padPx + itemPx * index + itemPx / 2f }
 
     val lens = rememberLiquidLens()
@@ -128,10 +137,25 @@ fun LiquidGlassBar(
     val minX = centerOf(0)
     val maxX = centerOf(items.lastIndex)
 
-    GlassSurface(
+    // Нажатие любой из кнопок раздувает каплю. Источники держим врозь, иначе
+    // круги от нажатия расходились бы сразу по всем трём
+    val sources = remember { List(items.size) { MutableInteractionSource() } }
+    val anyPressed = sources.map { it.collectIsPressedAsState() }.any { it.value }
+    val press by animateFloatAsState(
+        targetValue = if (anyPressed || dragging) PressScale else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "barPress"
+    )
+
+    val barWidth = ItemSize * items.size + BarPadding * 2
+
+    Box(
         modifier = modifier
-            .height(BarHeight)
-            .width(ItemSize * items.size + BarPadding * 2)
+            .width(barWidth + BarOverflow * 2)
+            .height(BarHeight + BarOverflow * 2)
             .pointerInput(itemPx, padPx, items.size) {
                 detectHorizontalDragGestures(
                     onDragStart = { start ->
@@ -165,10 +189,17 @@ fun LiquidGlassBar(
                     }
                 }
             },
-        shape = GlassCapsuleShape,
-        backdrop = backdrop,
-        fallbackColor = scheme.surfaceContainerHigh.copy(alpha = 0.96f)
+        contentAlignment = Alignment.Center
     ) {
+        GlassSurface(
+            modifier = Modifier.width(barWidth).height(BarHeight),
+            shape = GlassCapsuleShape,
+            backdrop = backdrop,
+            fallbackColor = scheme.surfaceContainerHigh.copy(alpha = 0.96f)
+        )
+
+        // Капля рисуется поверх стекла и вне его обрезки - иначе под пальцем ей
+        // некуда было бы вырасти
         Canvas(
             modifier = Modifier
                 .fillMaxSize()
@@ -176,7 +207,7 @@ fun LiquidGlassBar(
         ) {
             val cx = dropX.value
             val cy = size.height / 2f
-            val dropHeight = itemPx - 8.dp.toPx()
+            val dropHeight = (itemPx - 8.dp.toPx()) * press
             val dropRadius = dropHeight / 2f
 
             // Тянется тем сильнее, чем быстрее едет - что от пружины, что от пальца
@@ -260,16 +291,13 @@ fun LiquidGlassBar(
             val fringe = if (refracted) (speed / 1800f).coerceIn(0f, 0.7f) else 0f
             if (fringe > 0.01f) {
                 drawRoundRect(
-                    brush = Brush.linearGradient(
-                        colors = listOf(
-                            Color(0xFFFFD27A),
-                            Color(0xFFFFFFFF),
-                            Color(0xFF7ADFFF),
-                            Color(0xFFB98BFF),
-                            Color(0xFFFFD27A)
-                        ),
-                        start = topLeft,
-                        end = Offset(topLeft.x + dropWidth, topLeft.y + dropHeight)
+                    brush = Brush.verticalGradient(
+                        0f to Color(0xFFFFD08A),
+                        0.4f to Color.Transparent,
+                        0.6f to Color.Transparent,
+                        1f to Color(0xFF86B8FF),
+                        startY = topLeft.y,
+                        endY = topLeft.y + dropHeight
                     ),
                     topLeft = topLeft,
                     size = dropSize,
@@ -298,15 +326,17 @@ fun LiquidGlassBar(
 
         Row(
             modifier = Modifier
-                .fillMaxSize()
+                .width(barWidth)
+                .height(BarHeight)
                 .padding(horizontal = BarPadding),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            items.forEach { item ->
+            items.forEachIndexed { index, item ->
                 GlassBarButton(
                     item = item,
                     active = item == selected,
+                    interactionSource = sources[index],
                     onClick = { onSelect(item) }
                 )
             }
@@ -318,10 +348,10 @@ fun LiquidGlassBar(
 private fun GlassBarButton(
     item: GlassBarItem,
     active: Boolean,
+    interactionSource: MutableInteractionSource,
     onClick: () -> Unit
 ) {
     val scheme = MaterialTheme.colorScheme
-    val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val scale by animateFloatAsState(
         targetValue = if (pressed) 0.88f else 1f,
