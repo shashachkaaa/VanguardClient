@@ -47,6 +47,7 @@ uniform float uThickness;
 uniform float uRefraction;
 uniform float uDispersion;
 uniform float uHighlight;
+uniform float uMask;
 
 // Signed distance to a rounded rectangle: negative inside, positive outside.
 float sdRoundRect(float2 p, float2 b, float r) {
@@ -58,8 +59,13 @@ half4 main(float2 coord) {
     float2 p = coord - uCenter;
     float d = sdRoundRect(p, uHalf, uRadius);
 
-    // Outside the lens the backdrop passes through untouched.
-    if (d > 0.0) {
+    // Past the lens (plus one pixel for the edge ramp) there is nothing to bend.
+    // Masking mode drops the backdrop instead of passing it through, so the drop
+    // can be drawn on its own over an already finished surface.
+    if (d > 1.0) {
+        if (uMask > 0.5) {
+            return half4(0.0);
+        }
         return content.eval(coord);
     }
 
@@ -89,8 +95,14 @@ half4 main(float2 coord) {
     // Specular rim, brightest where the edge faces the light.
     float lit = 0.5 + 0.5 * dot(n, normalize(float2(-0.6, -1.0)));
     float glow = uHighlight * t * t * t * lit;
+    half4 res = half4(c.rgb + half3(glow), c.a);
 
-    return half4(c.rgb + half3(glow), c.a);
+    // One-pixel ramp at the border, otherwise the masked drop comes out jagged.
+    if (uMask > 0.5) {
+        half a = half(clamp(0.5 - d, 0.0, 1.0));
+        res = res * a;
+    }
+    return res;
 }
 """
 
@@ -115,6 +127,8 @@ interface LiquidLens {
      * @param refraction Величина смещения фона у края, в пикселях.
      * @param dispersion Расхождение цветовых каналов, доля от смещения.
      * @param highlight Яркость блика по ободку.
+     * @param mask Рисовать только саму каплю, а фон вокруг отбрасывать. Нужно, когда
+     *   капля ложится поверх уже готовой поверхности, а не заменяет её собой.
      * @return Эффект или null, если собрать его не вышло.
      */
     fun effect(
@@ -125,7 +139,8 @@ interface LiquidLens {
         thickness: Float,
         refraction: Float,
         dispersion: Float,
-        highlight: Float
+        highlight: Float,
+        mask: Boolean = false
     ): RenderEffect?
 }
 
@@ -139,7 +154,8 @@ private class ShaderLens(private val shader: RuntimeShader) : LiquidLens {
         thickness: Float,
         refraction: Float,
         dispersion: Float,
-        highlight: Float
+        highlight: Float,
+        mask: Boolean
     ): RenderEffect? = runCatching {
         shader.setFloatUniform("uSize", layerSize.width, layerSize.height)
         shader.setFloatUniform("uCenter", center.x, center.y)
@@ -149,6 +165,7 @@ private class ShaderLens(private val shader: RuntimeShader) : LiquidLens {
         shader.setFloatUniform("uRefraction", refraction)
         shader.setFloatUniform("uDispersion", dispersion)
         shader.setFloatUniform("uHighlight", highlight)
+        shader.setFloatUniform("uMask", if (mask) 1f else 0f)
         android.graphics.RenderEffect
             .createRuntimeShaderEffect(shader, "content")
             .asComposeRenderEffect()
