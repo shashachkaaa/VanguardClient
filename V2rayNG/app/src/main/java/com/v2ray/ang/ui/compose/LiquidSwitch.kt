@@ -36,12 +36,13 @@ private const val ThumbAspect = 1.18f
 /**
  * Переключатель со стеклянной каплей вместо ползунка.
  *
- * Капля прозрачная: сквозь неё виден трек, а у её края трек преломляется и по ободку
- * расходится в радугу - этим она и читается как стекло, а не как белый кружок. Всё
- * рисуется в один проход: трек пишется в слой, слой прогоняется через линзу, сверху
- * ложатся плёнка и блик.
+ * Капля плотная, с тенью и радужной каймой по ободку, и на ходу вытягивается тем
+ * сильнее, чем быстрее едет.
  *
- * На Android 12 и ниже шейдера нет, и капля рисуется сплошной - как обычный ползунок.
+ * Прозрачной она была сначала - и это оказалось ошибкой: линза поверх однотонного
+ * трека возвращает ровно тот же тон, преломлять там нечего, и ползунок сливался с
+ * треком. Поэтому кайма рисуется явно, а линза оставлена ради краёв трека - только
+ * там под каплей есть перепад, который можно согнуть.
  *
  * @param checked Включён ли переключатель.
  * @param onCheckedChange Обработчик нажатия или null, если нажатие обрабатывает строка.
@@ -56,7 +57,6 @@ fun LiquidSwitch(
     enabled: Boolean = true,
     checkedTrackColor: Color = MaterialTheme.colorScheme.secondary
 ) {
-    val scheme = MaterialTheme.colorScheme
     val isDark = LocalDarkTheme.current
 
     val lens = rememberLiquidLens()
@@ -149,49 +149,70 @@ fun LiquidSwitch(
         val top = cy - thumbHeight / 2f
         val bottom = cy + thumbHeight / 2f
 
-        if (effect == null) {
-            // Без линзы прозрачная капля была бы неотличима от трека
+        // Тень под каплей: без неё она не отделяется от трека. Рисуем несколькими
+        // ослабевающими контурами - настоящей тени у произвольной формы в DrawScope нет
+        repeat(3) { step ->
+            val grow = (step + 1) * 1.dp.toPx()
             drawRoundRect(
-                color = scheme.surface.copy(alpha = disabledAlpha),
-                topLeft = topLeft,
-                size = thumbSize,
-                cornerRadius = corner
-            )
-        } else {
-            drawRoundRect(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.26f * disabledAlpha),
-                        Color.White.copy(alpha = 0.06f * disabledAlpha)
-                    ),
-                    startY = top,
-                    endY = bottom
-                ),
-                topLeft = topLeft,
-                size = thumbSize,
-                cornerRadius = corner
+                color = Color.Black.copy(alpha = 0.05f * disabledAlpha),
+                topLeft = Offset(topLeft.x - grow, topLeft.y - grow + 0.6f * grow),
+                size = Size(thumbSize.width + grow * 2f, thumbSize.height + grow * 2f),
+                cornerRadius = CornerRadius(thumbRadius + grow, thumbRadius + grow)
             )
         }
 
-        // Грань капли: сверху ловит свет, снизу почти гаснет
+        // Тело капли непрозрачное. Прозрачным оно было ошибкой: линза поверх
+        // однотонного трека возвращает тот же тон, и ползунок пропадал в нём
         drawRoundRect(
             brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color.White.copy(alpha = 0.75f * disabledAlpha),
-                    Color.White.copy(alpha = 0.12f * disabledAlpha)
-                ),
+                colors = listOf(Color.White, Color(0xFFF2F3F5)),
                 startY = top,
                 endY = bottom
             ),
             topLeft = topLeft,
             size = thumbSize,
             cornerRadius = corner,
-            style = Stroke(width = 1.dp.toPx())
+            alpha = disabledAlpha
         )
 
-        // Трек тоже стеклянный: тонкая тёмная грань отделяет его от карточки
+        // Радужная кайма рисуется явно, а не берётся из расхождения каналов:
+        // на однотонном фоне шейдеру просто нечего разводить по цветам
         drawRoundRect(
-            color = Color.Black.copy(alpha = if (isDark) 0.22f else 0.08f),
+            brush = Brush.linearGradient(
+                colors = listOf(
+                    Color(0xFFFFD27A),
+                    Color(0xFFFFFFFF),
+                    Color(0xFF7ADFFF),
+                    Color(0xFFB98BFF),
+                    Color(0xFFFFD27A)
+                ),
+                start = topLeft,
+                end = Offset(topLeft.x + thumbSize.width, topLeft.y + thumbSize.height)
+            ),
+            topLeft = topLeft,
+            size = thumbSize,
+            cornerRadius = corner,
+            style = Stroke(width = 1.6.dp.toPx()),
+            alpha = 0.85f * disabledAlpha
+        )
+
+        // Блик по верхней кромке поверх каймы - он и делает каплю выпуклой
+        drawRoundRect(
+            brush = Brush.verticalGradient(
+                colors = listOf(Color.White, Color.White.copy(alpha = 0f)),
+                startY = top,
+                endY = cy
+            ),
+            topLeft = topLeft,
+            size = thumbSize,
+            cornerRadius = corner,
+            style = Stroke(width = 1.dp.toPx()),
+            alpha = 0.9f * disabledAlpha
+        )
+
+        // Тонкая грань трека отделяет его от карточки
+        drawRoundRect(
+            color = Color.Black.copy(alpha = if (isDark) 0.22f else 0.10f),
             cornerRadius = CornerRadius(trackRadius, trackRadius),
             style = Stroke(width = 1.dp.toPx())
         )
