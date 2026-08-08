@@ -18,7 +18,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -36,7 +35,6 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlin.math.abs
 
 /**
@@ -55,11 +53,19 @@ private const val ThumbHeightRatio = 0.92f
  */
 private val Overflow = 7.dp
 
-/** Насколько капля вырастает под пальцем. */
-private const val PressScale = 1.22f
+/**
+ * Под пальцем капля расплющивается: вширь заметно сильнее, чем в высоту. Так ведёт
+ * себя капля, на которую надавили, - и именно ширины ей не хватало.
+ */
+private const val PressWidthScale = 1.45f
+private const val PressHeightScale = 1.1f
 
-/** Сколько длится переброс целиком. Фазы заданы долями от него. */
+/** Сколько длится переброс. */
 private const val FlipDurationMs = 900
+
+/** Раздувание при перебросе: подъём, плато, спад. Длительности постоянные. */
+private const val SwellRiseMs = 220
+private const val SwellHoldMs = 440
 
 /**
  * Переключатель со стеклянной каплей.
@@ -92,7 +98,6 @@ fun LiquidSwitch(
 ) {
     val isDark = LocalDarkTheme.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
 
     val lens = rememberLiquidLens()
     val trackLayer = rememberGraphicsLayer()
@@ -108,14 +113,32 @@ fun LiquidSwitch(
     val fromX = overPx + inset + baseThumbW / 2f
     val toX = overPx + trackW - inset - baseThumbW / 2f
 
-    val progress = remember { Animatable(if (checked) 1f else 0f) }
     val swellAnim = remember { Animatable(0f) }
     var dragging by remember { mutableStateOf(false) }
 
+    // Цель хранится в состоянии, а гонится за ней одна непрерывная анимация.
+    // Раньше каждое событие пальца запускало свою корутину с animateTo, и каждая
+    // отменяла предыдущую - от этой чехарды капля и дёргалась
+    var dragTarget by remember { mutableStateOf<Float?>(null) }
+    val target = dragTarget ?: if (checked) 1f else 0f
+    val progress by animateFloatAsState(
+        targetValue = target,
+        animationSpec = if (dragging) {
+            spring(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
+        } else {
+            tween(FlipDurationMs, easing = FastOutSlowInEasing)
+        },
+        label = "switchProgress"
+    )
+
+    // Отставание от цели заменяет скорость: у пружины оно ей прямо пропорционально,
+    // а считать его можно без обращения к внутренностям анимации
+    val lag = abs(target - progress)
+
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
-    val press by animateFloatAsState(
-        targetValue = if ((pressed || dragging) && enabled) PressScale else 1f,
+    val pressAmount by animateFloatAsState(
+        targetValue = if ((pressed || dragging) && enabled) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -123,20 +146,19 @@ fun LiquidSwitch(
         label = "switchPress"
     )
 
-    // Переброс: раздувание идёт своей дорожкой параллельно ходу, поэтому после
-    // перетаскивания капля доезжает до края, не раздуваясь заново на полпути
-    LaunchedEffect(checked, dragging) {
-        if (dragging) return@LaunchedEffect
-        val target = if (checked) 1f else 0f
-        if (progress.value == target) return@LaunchedEffect
-
-        val duration = (FlipDurationMs * abs(target - progress.value)).toInt().coerceAtLeast(220)
-        launch {
-            swellAnim.animateTo(1f, tween(duration / 4, easing = FastOutSlowInEasing))
-            delay(duration / 2L)
-            swellAnim.animateTo(0f, tween(duration / 4, easing = FastOutSlowInEasing))
+    // Раздувание идёт своей дорожкой с постоянными длительностями. Считать их от
+    // оставшегося пути было ошибкой: после микро-перетаскивания путь почти нулевой,
+    // и всё раздувание схлопывалось в пару кадров - это и выглядело рывком
+    var settled by remember { mutableStateOf(false) }
+    LaunchedEffect(checked) {
+        if (!settled) {
+            settled = true
+            return@LaunchedEffect
         }
-        progress.animateTo(target, tween(duration, easing = FastOutSlowInEasing))
+        if (dragging) return@LaunchedEffect
+        swellAnim.animateTo(1f, tween(SwellRiseMs, easing = FastOutSlowInEasing))
+        delay(SwellHoldMs.toLong())
+        swellAnim.animateTo(0f, tween(SwellRiseMs, easing = FastOutSlowInEasing))
     }
 
     val trackOff = if (isDark) Color.White.copy(alpha = 0.26f) else Color.Black.copy(alpha = 0.20f)
@@ -153,30 +175,34 @@ fun LiquidSwitch(
                 onValueChange = onCheckedChange
             )
             .pointerInput(fromX, toX) {
+                var travelled = 0f
                 detectHorizontalDragGestures(
-                    onDragStart = { dragging = true },
-                    onDragEnd = {
-                        // Куда ближе, туда и встаём. Доехать поручаем эффекту выше:
-                        // иначе он и этот вызов тянули бы каплю каждый в свою сторону
-                        val target = progress.value >= 0.5f
-                        dragging = false
-                        if (target != checked) onCheckedChange(target)
+                    onDragStart = {
+                        dragging = true
+                        travelled = 0f
+                        dragTarget = if (checked) 1f else 0f
                     },
-                    onDragCancel = { dragging = false }
-                ) { change, _ ->
-                    change.consume()
-                    val p = ((change.position.x - fromX) / (toX - fromX)).coerceIn(0f, 1f)
-                    // Не snapTo, а жёсткая пружина: капля чуть отстаёт от пальца и
-                    // от этого тянется, а заодно у неё появляется скорость
-                    scope.launch {
-                        progress.animateTo(
-                            targetValue = p,
-                            animationSpec = spring(
-                                dampingRatio = 1f,
-                                stiffness = Spring.StiffnessHigh
-                            )
-                        )
+                    onDragEnd = {
+                        // Короткое движение - это промахнувшийся тап, а не
+                        // перетаскивание: жест перехватил его у нажатия, значит и
+                        // отработать за него должен он же
+                        val far = abs(travelled) > (toX - fromX) * 0.15f
+                        val result = if (far) (dragTarget ?: 0f) >= 0.5f else !checked
+                        dragging = false
+                        dragTarget = null
+                        if (result != checked) onCheckedChange(result)
+                    },
+                    onDragCancel = {
+                        dragging = false
+                        dragTarget = null
                     }
+                ) { change, amount ->
+                    change.consume()
+                    travelled += amount
+                    // Смещением, а не прыжком к пальцу: от прыжка капля
+                    // телепортировалась через весь трек на первом же движении
+                    dragTarget = ((dragTarget ?: 0f) + amount / (toX - fromX))
+                        .coerceIn(0f, 1f)
                 }
             }
     } else {
@@ -188,25 +214,26 @@ fun LiquidSwitch(
             .size(SwitchWidth + Overflow * 2, SwitchHeight + Overflow * 2)
             .then(input)
     ) {
-        // Растяжение на ходу: тем сильнее, чем быстрее едет. При перебросе форму
-        // задаёт своя дорожка, при перетаскивании - скорость пальца
-        val dragStretch = if (dragging) (abs(progress.velocity) * 0.12f).coerceAtMost(0.4f) else 0f
+        // Растяжение на ходу: тем сильнее, чем дальше капля отстала от пальца
+        val dragStretch = if (dragging) (lag * 3.5f).coerceAtMost(0.45f) else 0f
         val swell = maxOf(swellAnim.value, dragStretch)
 
         val room = trackW - inset * 2f
-        val thumbHeight = thumbH * press
-        val thumbWidth = lerp(baseThumbW, room, swell) * press
+        // Под пальцем капля расплющивается: вширь заметно больше, чем в высоту -
+        // так ведёт себя капля, которую придавили
+        val thumbHeight = thumbH * lerp(1f, PressHeightScale, pressAmount)
+        val thumbWidth = lerp(baseThumbW, room, swell) * lerp(1f, PressWidthScale, pressAmount)
         val thumbRadius = thumbHeight / 2f
 
         // Ход считаем по уже раздутой капле. Когда она во весь трек, оба края
         // сходятся в центр - и капля сама встаёт посередине, без отдельного расчёта
         val from = overPx + inset + thumbWidth / 2f
         val to = overPx + trackW - inset - thumbWidth / 2f
-        val cx = lerp(from, to.coerceAtLeast(from), progress.value)
+        val cx = lerp(from, to.coerceAtLeast(from), progress)
         val cy = size.height / 2f
 
         // Цвет трека меняется на плато - под раздутой каплей, а не рядом с ней
-        val track = lerp(trackOff, checkedTrackColor, smoothstep(0.3f, 0.7f, progress.value))
+        val track = lerp(trackOff, checkedTrackColor, smoothstep(0.3f, 0.7f, progress))
             .let { it.copy(alpha = it.alpha * disabledAlpha) }
 
         val trackTopLeft = Offset(overPx, (size.height - trackH) / 2f)

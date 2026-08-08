@@ -36,9 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
@@ -50,8 +48,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionOnScreen
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.animation.core.Animatable
-import kotlinx.coroutines.launch
+import androidx.compose.ui.util.lerp
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import com.v2ray.ang.R
@@ -76,8 +73,12 @@ private val BarPadding = 14.dp
  */
 private val BarOverflow = 10.dp
 
-/** Насколько капля вырастает под пальцем. */
-private const val PressScale = 1.18f
+/**
+ * Под пальцем капля расплющивается: вширь заметно сильнее, чем в высоту - так ведёт
+ * себя капля, на которую надавили.
+ */
+private const val PressWidthScale = 1.4f
+private const val PressHeightScale = 1.12f
 
 /**
  * Нижняя капсула в духе жидкого стекла: под ней размывается то, что нарисовано на экране,
@@ -103,7 +104,6 @@ fun LiquidGlassBar(
     val scheme = MaterialTheme.colorScheme
     val isDark = LocalDarkTheme.current
     val density = LocalDensity.current
-    val scope = rememberCoroutineScope()
 
     val items = listOf(GlassBarItem.HOME, GlassBarItem.SETTINGS, GlassBarItem.ADD)
     val selectedIndex = items.indexOf(selected).coerceAtLeast(0)
@@ -115,24 +115,32 @@ fun LiquidGlassBar(
     val lens = rememberLiquidLens()
     val dropLayer = rememberGraphicsLayer()
 
-    val dropX = remember { Animatable(centerOf(selectedIndex)) }
     var dragging by remember { mutableStateOf(false) }
+
+    // Цель хранится в состоянии, а гонится за ней одна непрерывная анимация.
+    // Раньше каждое событие пальца запускало свою корутину с animateTo, и каждая
+    // отменяла предыдущую - от этой чехарды капля и дёргалась
+    var dragTarget by remember { mutableStateOf<Float?>(null) }
+    val target = dragTarget ?: centerOf(selectedIndex)
+    val dropX by animateFloatAsState(
+        targetValue = target,
+        animationSpec = if (dragging) {
+            spring(dampingRatio = 1f, stiffness = Spring.StiffnessMedium)
+        } else {
+            spring(
+                dampingRatio = Spring.DampingRatioMediumBouncy,
+                stiffness = Spring.StiffnessLow
+            )
+        },
+        label = "barDropX"
+    )
+
+    // Отставание от цели заменяет скорость: у пружины оно ей прямо пропорционально
+    val lag = abs(target - dropX)
 
     // Экранные координаты капли: слой с фоном общий на весь экран, и вырезать из
     // него нужный участок можно только по общим координатам
     var canvasOrigin by remember { mutableStateOf(Offset.Zero) }
-
-    LaunchedEffect(selectedIndex, dragging) {
-        if (!dragging) {
-            dropX.animateTo(
-                targetValue = centerOf(selectedIndex),
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessLow
-                )
-            )
-        }
-    }
 
     val minX = centerOf(0)
     val maxX = centerOf(items.lastIndex)
@@ -141,8 +149,8 @@ fun LiquidGlassBar(
     // круги от нажатия расходились бы сразу по всем трём
     val sources = remember { List(items.size) { MutableInteractionSource() } }
     val anyPressed = sources.map { it.collectIsPressedAsState() }.any { it.value }
-    val press by animateFloatAsState(
-        targetValue = if (anyPressed || dragging) PressScale else 1f,
+    val pressAmount by animateFloatAsState(
+        targetValue = if (anyPressed || dragging) 1f else 0f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -158,35 +166,27 @@ fun LiquidGlassBar(
             .height(BarHeight + BarOverflow * 2)
             .pointerInput(itemPx, padPx, items.size) {
                 detectHorizontalDragGestures(
-                    onDragStart = { start ->
+                    onDragStart = {
                         dragging = true
-                        scope.launch { dropX.snapTo(start.x.coerceIn(minX, maxX)) }
+                        dragTarget = centerOf(selectedIndex)
                     },
                     onDragEnd = {
-                        // Ближайший пункт выбираем, а доехать до него капле
-                        // поручает эффект выше - иначе он и этот вызов тянули бы
-                        // её каждый в свою сторону
-                        val index = ((dropX.value - padPx - itemPx / 2f) / itemPx)
+                        val index = (((dragTarget ?: minX) - padPx - itemPx / 2f) / itemPx)
                             .roundToInt()
                             .coerceIn(0, items.lastIndex)
                         dragging = false
+                        dragTarget = null
                         onSelect(items[index])
                     },
-                    onDragCancel = { dragging = false }
-                ) { change, _ ->
-                    change.consume()
-                    // Не snapTo, а жёсткая пружина: капля чуть отстаёт от пальца,
-                    // и от этого тянется - а заодно у неё появляется скорость,
-                    // по которой считается растяжение
-                    scope.launch {
-                        dropX.animateTo(
-                            targetValue = change.position.x.coerceIn(minX, maxX),
-                            animationSpec = spring(
-                                dampingRatio = 1f,
-                                stiffness = Spring.StiffnessHigh
-                            )
-                        )
+                    onDragCancel = {
+                        dragging = false
+                        dragTarget = null
                     }
+                ) { change, amount ->
+                    change.consume()
+                    // Смещением, а не прыжком к пальцу: от прыжка капля
+                    // перескакивала через всю панель на первом же движении
+                    dragTarget = ((dragTarget ?: minX) + amount).coerceIn(minX, maxX)
                 }
             },
         contentAlignment = Alignment.Center
@@ -205,14 +205,15 @@ fun LiquidGlassBar(
                 .fillMaxSize()
                 .onGloballyPositioned { canvasOrigin = it.positionOnScreen() }
         ) {
-            val cx = dropX.value
+            val cx = dropX
             val cy = size.height / 2f
-            val dropHeight = (itemPx - 8.dp.toPx()) * press
+            val dropHeight = (itemPx - 8.dp.toPx()) * lerp(1f, PressHeightScale, pressAmount)
             val dropRadius = dropHeight / 2f
 
-            // Тянется тем сильнее, чем быстрее едет - что от пружины, что от пальца
-            val speed = abs(dropX.velocity)
-            val dropWidth = dropHeight * (1f + (speed / 2600f).coerceAtMost(0.85f))
+            // Тянется тем сильнее, чем дальше отстала от цели, и расплющивается
+            // под пальцем
+            val stretch = (lag / itemPx).coerceAtMost(0.8f)
+            val dropWidth = dropHeight * (1f + stretch) * lerp(1f, PressWidthScale, pressAmount)
 
             val effect = lens?.effect(
                 layerSize = size,
@@ -288,7 +289,7 @@ fun LiquidGlassBar(
             // Кайма разгорается на ходу и гаснет на месте. Так это и на записи:
             // над мягким размытым фоном её нет, а стоит капле поехать - по ободку
             // проходит цветной след
-            val fringe = if (refracted) (speed / 1800f).coerceIn(0f, 0.7f) else 0f
+            val fringe = if (refracted) (stretch * 1.1f).coerceIn(0f, 0.7f) else 0f
             if (fringe > 0.01f) {
                 drawRoundRect(
                     brush = Brush.verticalGradient(
