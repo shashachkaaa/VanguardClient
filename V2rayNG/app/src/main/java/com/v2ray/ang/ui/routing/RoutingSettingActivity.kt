@@ -33,7 +33,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
@@ -378,7 +377,6 @@ private fun RoutingRulesetItem(
             LiquidSwitch(
                 checked = ruleset.enabled ?: false,
                 onCheckedChange = onEnabledChange,
-                modifier = Modifier.scale(0.76f),
                 checkedTrackColor = colorFabActive
             )
         }

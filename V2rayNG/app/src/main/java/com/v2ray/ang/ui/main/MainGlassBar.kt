@@ -221,13 +221,13 @@ fun LiquidGlassBar(
 
             if (refracted) {
                 // Плёнка возвращает капле матовость капсулы: сам слой её тонировку
-                // собой закрыл. Заодно капля становится светлее панели - в
-                // референсе она именно светлое пятно, а не цветное
+                // собой закрыл. В референсе капля от панели отличается едва-едва,
+                // поэтому плёнка лёгкая - каплю выдаёт грань, а не заливка
                 drawRoundRect(
                     brush = Brush.verticalGradient(
                         colors = listOf(
-                            Color.White.copy(alpha = if (isDark) 0.22f else 0.42f),
-                            Color.White.copy(alpha = if (isDark) 0.08f else 0.20f)
+                            Color.White.copy(alpha = if (isDark) 0.16f else 0.26f),
+                            Color.White.copy(alpha = if (isDark) 0.05f else 0.10f)
                         ),
                         startY = topLeft.y,
                         endY = topLeft.y + dropHeight
@@ -254,7 +254,11 @@ fun LiquidGlassBar(
                 cornerRadius = corner
             )
 
-            if (refracted) {
+            // Кайма разгорается на ходу и гаснет на месте. Так это и на записи:
+            // над мягким размытым фоном её нет, а стоит капле поехать - по ободку
+            // проходит цветной след
+            val fringe = if (refracted) (speed / 1800f).coerceIn(0f, 0.7f) else 0f
+            if (fringe > 0.01f) {
                 drawRoundRect(
                     brush = Brush.linearGradient(
                         colors = listOf(
@@ -271,7 +275,7 @@ fun LiquidGlassBar(
                     size = dropSize,
                     cornerRadius = corner,
                     style = Stroke(width = 1.4.dp.toPx()),
-                    alpha = 0.45f
+                    alpha = fringe
                 )
             }
 
