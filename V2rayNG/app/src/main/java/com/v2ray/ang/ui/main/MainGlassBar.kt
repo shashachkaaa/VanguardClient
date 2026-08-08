@@ -176,7 +176,7 @@ fun LiquidGlassBar(
         ) {
             val cx = dropX.value
             val cy = size.height / 2f
-            val dropHeight = itemPx - 14.dp.toPx()
+            val dropHeight = itemPx - 8.dp.toPx()
             val dropRadius = dropHeight / 2f
 
             // Тянется тем сильнее, чем быстрее едет - что от пружины, что от пальца
@@ -200,14 +200,15 @@ fun LiquidGlassBar(
                 runCatching {
                     dropLayer.renderEffect = effect
                     dropLayer.record {
-                        // Берём неразмытый снимок: размытое стекло капсулы уже под
-                        // нами, и капля на его фоне должна читаться линзой, а не
-                        // ещё одним пятном
+                        // Снимок берём размытый, тот же, что под капсулой. С резким
+                        // капля выходила дыркой в панели: сквозь неё читался текст
+                        // списка, да ещё и сдвинутый линзой. Стекло гнёт своё
+                        // матовое содержимое, а не прорезает окно наружу
                         translate(
                             left = backdrop.origin.x - canvasOrigin.x,
                             top = backdrop.origin.y - canvasOrigin.y
                         ) {
-                            drawLayer(backdrop.layer)
+                            drawLayer(backdrop.blurred)
                         }
                     }
                     drawLayer(dropLayer)
@@ -218,14 +219,34 @@ fun LiquidGlassBar(
             val dropSize = Size(dropWidth, dropHeight)
             val corner = CornerRadius(dropRadius, dropRadius)
 
-            // Акцент виден и сквозь стекло, но без линзы он единственное, что
-            // отмечает активный пункт, - поэтому там плотнее
+            if (refracted) {
+                // Плёнка возвращает капле матовость капсулы: сам слой её тонировку
+                // собой закрыл. Заодно капля становится светлее панели - в
+                // референсе она именно светлое пятно, а не цветное
+                drawRoundRect(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = if (isDark) 0.22f else 0.42f),
+                            Color.White.copy(alpha = if (isDark) 0.08f else 0.20f)
+                        ),
+                        startY = topLeft.y,
+                        endY = topLeft.y + dropHeight
+                    ),
+                    topLeft = topLeft,
+                    size = dropSize,
+                    cornerRadius = corner
+                )
+            }
+
+            // Акцент лишь подкрашивает каплю: какой пункт активен, и так видно по
+            // цвету иконки. Без линзы подкрасить приходится плотнее - больше
+            // отметить активный пункт нечем
             drawRoundRect(
                 color = scheme.primary.copy(
                     alpha = when {
                         !refracted -> if (isDark) 0.30f else 0.18f
-                        isDark -> 0.16f
-                        else -> 0.10f
+                        isDark -> 0.10f
+                        else -> 0.07f
                     }
                 ),
                 topLeft = topLeft,
@@ -234,7 +255,6 @@ fun LiquidGlassBar(
             )
 
             if (refracted) {
-                // Кайма и блик по ободку: то, что делает каплю выпуклой
                 drawRoundRect(
                     brush = Brush.linearGradient(
                         colors = listOf(
@@ -251,14 +271,15 @@ fun LiquidGlassBar(
                     size = dropSize,
                     cornerRadius = corner,
                     style = Stroke(width = 1.4.dp.toPx()),
-                    alpha = 0.55f
+                    alpha = 0.45f
                 )
             }
 
+            // Грань: сверху ловит свет, книзу гаснет - от этого капля выпуклая
             drawRoundRect(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = if (isDark) 0.55f else 0.85f),
+                        Color.White.copy(alpha = if (isDark) 0.65f else 0.95f),
                         Color.White.copy(alpha = 0f)
                     ),
                     startY = topLeft.y,
@@ -267,7 +288,7 @@ fun LiquidGlassBar(
                 topLeft = topLeft,
                 size = dropSize,
                 cornerRadius = corner,
-                style = Stroke(width = 1.dp.toPx())
+                style = Stroke(width = 1.2.dp.toPx())
             )
         }
 
